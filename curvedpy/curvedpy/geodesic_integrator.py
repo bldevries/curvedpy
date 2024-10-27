@@ -60,9 +60,8 @@ class GeodesicIntegrator:
         # Norm of k
         # the norm of k determines if you have a massive particle (-1), a mass-less photon (0) 
         # or a space-like curve (1)
-        # THIS WONT WORK WITH OF DIAGONAL TERMS!!!
-        self.norm_k = self.g[0, 0]*self.k_t**2 + self.g[1,1]*self.k_x**2 + \
-                        self.g[2,2]*self.k_y**2 + self.g[3,3]*self.k_z**2
+        self.k = sp.Matrix([self.k_t, self.k_x, self.k_y, self.k_z])
+        self.norm_k = (self.k.T*self.g*self.k)[0]
         
         # Now we calculate k_t using the norm. This eliminates one of the differential equations.
         # time_like = True: calculates a geodesic for a massive particle (not implemented yet)
