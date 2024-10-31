@@ -25,7 +25,7 @@ class TestCurvedpyFlatMetric(unittest.TestCase):
 class TestCurvedpySchwarzschild(unittest.TestCase):
 
     def setUp(self):
-        self.gi = cp.GeodesicIntegrator(metric='schwarzschild')
+        self.gi = cp.GeodesicIntegrator(metric='schwarzschild', mass=1.0)
         self.start_t, self.end_t, self.steps = 0, 60, 60
         self.max_step = 1
         self.round_level = 4
@@ -59,6 +59,25 @@ class TestCurvedpySchwarzschild(unittest.TestCase):
         k_x2, x2, k_y2, y2, k_z2, z2 = line_reverse.y
 
         self.assertTrue( bool((np.round(x,self.round_level) == np.round(np.flip(x2),self.round_level)).all()) )
+
+
+    def test_check_constant_kt(self):
+        line = self.gi.calc_trajectory(k_x_0 = 1., x0 = -10, k_y_0 = 0., y0 = 5, k_z_0 = 0., z0 = 0.0, \
+                                  curve_start = self.start_t, \
+                                  curve_end = self.end_t, \
+                                  nr_points_curve = self.steps,\
+                                 max_step=self.max_step)#,\
+    
+        k_t = self.gi.k_t_from_norm_lamb(*line.y, self.gi.r_s_value)
+
+        self.assertTrue( bool(np.std(k_t) < 0.3) ) # THIS NEEDS IMPROVEMENT!!
+
+        # Also check if the norm of a null ray in nicely zero
+        norm_k = self.gi.norm_k_lamb(k_t, *line.y, self.gi.r_s_value)
+        self.assertTrue( round(np.std(norm_k),8) == 0.0 )
+
+
+
 
 if __name__ == '__main__':
     unittest.main()

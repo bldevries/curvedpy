@@ -3,13 +3,10 @@ import sympy as sp
 import numpy as np
 from scipy.integrate import solve_ivp
 import time
-import multiprocessing as mp
 
-print("0")
 
-class GeodesicIntegrator:
-    def __init__(self, metric = "schwarzschild", mass = 1.):
-
+class GeodesicIntegratorIsotropicXYZ:
+    def __init__(self, metric = "schwarzschild_isotropic", mass = 1., verbose=False):
 
         # Schwarzschild radius together with mass in geometrized units
         self.M = mass
@@ -20,7 +17,7 @@ class GeodesicIntegrator:
 
         # Define symbolic variables
         self.t, self.x, self.y, self.z, self.r_s = sp.symbols('t x y z r_s')
-        
+
         # Radial distance to BlackHole location
         self.R = sp.sqrt(self.x**2 + self.y**2 + self.z**2)
 
@@ -32,19 +29,20 @@ class GeodesicIntegrator:
                 [0, 0, 1, 0],\
                 [0, 0, 0, 1]\
                 ])
-        elif metric == "schwarzschild":
+        elif metric == "schwarzschild_isotropic":
             self.g = sp.Matrix([\
                 [-(1-self.r_s/(4*self.R))**2 / (1+self.r_s/(4*self.R))**2, 0, 0, 0],\
                 [0, (1+self.r_s/(4*self.R))**4, 0, 0], \
                 [0, 0, (1+self.r_s/(4*self.R))**4, 0], \
                 [0, 0, 0, (1+self.r_s/(4*self.R))**4], \
-              ])     
+              ]) 
         
         # Connection Symbols
         self.gam_t = sp.Matrix([[self.gamma_func(0,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
         self.gam_x = sp.Matrix([[self.gamma_func(1,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
         self.gam_y = sp.Matrix([[self.gamma_func(2,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
         self.gam_z = sp.Matrix([[self.gamma_func(3,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        if verbose: print("Done connection symbols")
         
         # Building up the geodesic equation: 
         # Derivatives: k_beta = d x^beta / d lambda
@@ -56,13 +54,17 @@ class GeodesicIntegrator:
         self.dk_x = sum([- self.gam_x[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
         self.dk_y = sum([- self.gam_y[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
         self.dk_z = sum([- self.gam_z[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
+        print(self.dk_z)
+        if verbose: print("Done diff of k")
 
         # Norm of k
         # the norm of k determines if you have a massive particle (-1), a mass-less photon (0) 
         # or a space-like curve (1)
         self.k = sp.Matrix([self.k_t, self.k_x, self.k_y, self.k_z])
         self.norm_k = (self.k.T*self.g*self.k)[0]
-        
+        self.norm_k_lamb = sp.lambdify([self.k_t, self.k_x, self.x, self.k_y, self.y, self.k_z, self.z, \
+                                               self.r_s], self.norm_k, "numpy")
+
         # Now we calculate k_t using the norm. This eliminates one of the differential equations.
         # time_like = True: calculates a geodesic for a massive particle (not implemented yet)
         # time_like = False: calculates a geodesic for a photon
@@ -70,6 +72,7 @@ class GeodesicIntegrator:
             self.k_t_from_norm = sp.solve(self.norm_k+1, self.k_t)[1]
         else:
             self.k_t_from_norm = sp.solve(self.norm_k, self.k_t)[1]
+        if verbose: print("Done norm of k")
 
         # Lambdify versions
         self.dk_x_lamb = sp.lambdify([self.k_x, self.x, self.k_y, self.y, self.k_z, self.z, \
@@ -83,6 +86,7 @@ class GeodesicIntegrator:
                                      self.dk_z, "numpy")
         self.k_t_from_norm_lamb = sp.lambdify([self.k_x, self.x, self.k_y, self.y, self.k_z, self.z, \
                                                self.r_s], self.k_t_from_norm, "numpy")
+        if verbose: print("Done lambdifying")
      
     # Connection Symbols
     def gamma_func(self, sigma, mu, nu):
@@ -105,31 +109,39 @@ class GeodesicIntegrator:
                         curve_start = 0, \
                         curve_end = 50, \
                         nr_points_curve = 50, \
+                        method = "RK45",\
                         max_step = np.inf,\
+                        first_step = None,\
+                        rtol = 1e-3,\
+                        atol = 1e-6,\
                         verbose = False \
                        ):
 
-        # IMPLEMENT: check if inside horizon!
         r0 = np.linalg.norm(np.array([x0, y0, z0]))
         if r0 > self.r_s_value:
             # Step function needed for solve_ivp
             def step(lamb, new):
-                new_k_x, new_x, new_k_y, new_y, new_k_z, new_z = new
 
+                new_k_x, new_x, new_k_y, new_y, new_k_z, new_z = new
                 new_k_t = self.k_t_from_norm_lamb(*new, self.r_s_value)
+
+                #print(np.sqrt(new_x**2 + new_y**2 + new_z**2))
+
                 new_dk_x = self.dk_x_lamb(*new, new_k_t, t = 0, r_s = self.r_s_value)
                 dx = new_k_x
                 new_dk_y = self.dk_y_lamb(*new, new_k_t, t = 0, r_s = self.r_s_value)
                 dy = new_k_y
                 new_dk_z = self.dk_z_lamb(*new, new_k_t, t = 0, r_s = self.r_s_value)
                 dz = new_k_z
+                #print("step", new_x, new_y, new_z, dx, dy, dz)
 
                 return( new_dk_x, dx, new_dk_y, dy, new_dk_z, dz)
 
             def hit_blackhole(t, y): 
+                eps = 0.5
                 k_x, x, k_y, y, k_z, z = y
                 if verbose: print("Test Event Hit BH: ", x, y, z, self.r_s_value, x**2 + y**2 + z**2 - self.r_s_value**2)
-                return x**2 + y**2 + z**2 - self.r_s_value**2
+                return x**2 + y**2 + z**2 - (self.r_s_value+eps)**2
             hit_blackhole.terminal = True
 
             def reached_end(t, y): 
@@ -149,7 +161,11 @@ class GeodesicIntegrator:
             if R_end > r0 : events.append(reached_end)
             result = solve_ivp(step, (curve_start, curve_end), values_0, t_eval=t_pts, \
                                events=events,\
-                               max_step = max_step)
+                               method=method,\
+                               max_step = max_step,\
+                               first_step = first_step,\
+                               atol=atol,\
+                               rtol = rtol)
             end = time.time()
             if verbose: print("New: ", result.message, end-start, "sec")
 
@@ -162,4 +178,3 @@ class GeodesicIntegrator:
             result = {"start_inside_hole": True}
 
         return result
-
