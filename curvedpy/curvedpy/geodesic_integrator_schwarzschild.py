@@ -8,8 +8,22 @@ class GeodesicIntegratorSchwarzschild:
 
     conversions = Conversions()
 
-
     def __init__(self, mass=1.0, verbose=False):
+
+        # Connection Symbols
+        def gamma_func(sigma, mu, nu):
+            coord_symbols = [self.t, self.r, self.th, self.ph]
+            g_sigma_mu_nu = 0
+            for rho in [0,1,2,3]:
+                if self.g[sigma, rho] != 0:
+                    g_sigma_mu_nu += 1/2 * 1/self.g[sigma, rho] * (\
+                                    self.g[nu, rho].diff(coord_symbols[mu]) + \
+                                    self.g[rho, mu].diff(coord_symbols[nu]) - \
+                                    self.g[mu, nu].diff(coord_symbols[rho]) )
+                else:
+                    g_sigma_mu_nu += 0
+            return g_sigma_mu_nu
+
         self.M = mass
         self.r_s_value = 2*self.M 
 
@@ -27,10 +41,10 @@ class GeodesicIntegratorSchwarzschild:
             ])
 
         # Connection Symbols
-        self.gam_t = sp.Matrix([[self.gamma_func(0,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        self.gam_r = sp.Matrix([[self.gamma_func(1,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        self.gam_th = sp.Matrix([[self.gamma_func(2,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        self.gam_ph = sp.Matrix([[self.gamma_func(3,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        self.gam_t = sp.Matrix([[gamma_func(0,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        self.gam_r = sp.Matrix([[gamma_func(1,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        self.gam_th = sp.Matrix([[gamma_func(2,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        self.gam_ph = sp.Matrix([[gamma_func(3,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
         if verbose: print("Done connection symbols")
 
 
@@ -78,26 +92,6 @@ class GeodesicIntegratorSchwarzschild:
         if verbose: print("Done lambdifying")
 
 
-
-
-
-
-
-    # Connection Symbols
-    def gamma_func(self, sigma, mu, nu):
-        coord_symbols = [self.t, self.r, self.th, self.ph]
-        g_sigma_mu_nu = 0
-        for rho in [0,1,2,3]:
-            if self.g[sigma, rho] != 0:
-                g_sigma_mu_nu += 1/2 * 1/self.g[sigma, rho] * (\
-                                self.g[nu, rho].diff(coord_symbols[mu]) + \
-                                self.g[rho, mu].diff(coord_symbols[nu]) - \
-                                self.g[mu, nu].diff(coord_symbols[rho]) )
-            else:
-                g_sigma_mu_nu += 0
-        return g_sigma_mu_nu
-
-
     ################################################################################################
     #
     ################################################################################################
@@ -127,23 +121,28 @@ class GeodesicIntegratorSchwarzschild:
                        
 
         k_r, r, k_th, th, k_ph, ph = result.y
-        k_sph = list(zip(*[k_r, k_th, k_ph]))
-        x_sph = list(zip(*[r, th, ph]))
+        # k_sph = list(zip(*[k_r, k_th, k_ph]))
+        # x_sph = list(zip(*[r, th, ph]))
 
-        # THIS IS REDICULOUSLY SLOW, FIX IT!
-        k_xyz, x_xyz = [], []
-        for i in range(len(k_sph)):
-            x, k = self.conversions.convert_sph_to_xyz(x_sph[i], k_sph[i])
+        # # THIS IS REDICULOUSLY SLOW, FIX IT!
+        # k_xyz, x_xyz = [], []
+        # for i in range(len(k_sph)):
+        #     x, k = self.conversions.convert_sph_to_xyz(x_sph[i], k_sph[i])
 
-            # k, x = self.convert_sph_to_xyz(k_sph[i], x_sph[i])
-            k_xyz.append(k)
-            x_xyz.append(x)
+        #     # k, x = self.convert_sph_to_xyz(k_sph[i], x_sph[i])
+        #     k_xyz.append(k)
+        #     x_xyz.append(x)
 
-        return list(zip(*k_xyz)), list(zip(*x_xyz)), result #k_xyz, x_xyz , result
 
+        k_sph = np.array([k_r, k_th, k_ph])
+        x_sph = np.array([r, th, ph])
+        x_xyz, k_xyz = self.conversions.convert_sph_to_xyz(x_sph, k_sph)
+
+        #return list(zip(*k_xyz)), list(zip(*x_xyz)), result #k_xyz, x_xyz , result
+        return k_xyz, x_xyz, result
 
     ################################################################################################
-    #
+    # calc_trajectory_sph
     ################################################################################################
     # This function does the numerical integration of the geodesic equation using scipy's solve_ivp
     def calc_trajectory_sph(self, \
@@ -159,6 +158,11 @@ class GeodesicIntegratorSchwarzschild:
                         atol = 1e-6,\
                         verbose = False \
                        ):
+
+        if R_end == -1:
+            R_end = np.inf
+        elif R_end < r0:
+            R_end = r0*1.01
 
         if r0 > self.r_s_value:
             # Step function needed for solve_ivp
@@ -186,11 +190,13 @@ class GeodesicIntegratorSchwarzschild:
                 return r - self.r_s_value
             hit_blackhole.terminal = True
 
-            # def reached_end(t, y): 
-            #     k_x, x, k_y, y, k_z, z = y
-            #     if verbose: print("Test Event End: ", np.sqrt(x**2 + y**2 + z**2), R_end, x**2 + y**2 + z**2 - R_end**2)
-            #     return x**2 + y**2 + z**2 - R_end**2
-            # reached_end.terminal = True
+            def reached_end(t, y): 
+                #k_x, x, k_y, y, k_z, z = y
+                k_r, r, k_th, th, k_ph, ph = y
+                #print("integrator check end", r, r0)
+                #if verbose: print("Test Event End: ", np.sqrt(x**2 + y**2 + z**2), R_end, x**2 + y**2 + z**2 - R_end**2)
+                return r - R_end
+            reached_end.terminal = True
             
             values_0 = [ k_r_0, r0, k_th_0, th0, k_ph_0, ph0 ]
             if nr_points_curve == 0:
@@ -200,7 +206,8 @@ class GeodesicIntegratorSchwarzschild:
 
             start = time.time()
             events = [hit_blackhole]
-            if R_end > r0 : events.append(reached_end)
+            events.append(reached_end)
+
             result = solve_ivp(step, (curve_start, curve_end), values_0, t_eval=t_pts, \
                                events=events,\
                                method=method,\
@@ -211,83 +218,14 @@ class GeodesicIntegratorSchwarzschild:
             end = time.time()
             if verbose: print("New: ", result.message, end-start, "sec")
 
-
+            result.update({"R_end": R_end})
             result.update({"hit_blackhole": len(result.t_events[0])>0})
             result.update({"start_inside_hole": False})
+            result.update({"end_check": len(result.t_events[1])>0})
+
 
         else:
             if verbose: print("Starting location inside the blackhole.")
             result = {"start_inside_hole": True}
 
         return result
-
-
-    # def convert_to_xyz(self, r, th, ph):
-    #     z = r*np.cos(th)
-    #     x = r*np.sin(th)*np.cos(ph)
-    #     y = r*np.sin(th)*np.sin(ph)
-    #     return x, y, z
-
-    # def convert_to_sph(self, x, y, z):
-    #     r = np.sqrt(x**2 + y**2 + z**2)
-    #     th = np.acos(z/r)
-    #     ph = np.atan2(y, x) #ph = np.atan(y/x)
-    #     return r, th, ph
-
-
-    # def convert_xyz_to_sph(self, k_xyz, x_xyz ):
-    #     k_x, k_y, k_z = k_xyz
-    #     x_val, y_val, z_val = x_xyz
-    #     #r_val, th_val, ph_val
-    #     x_sph = self.convert_to_sph(x_val, y_val, z_val)
-
-    #     x, y, z = sp.symbols(" x y z ")
-
-    #     r = sp.sqrt(x**2+y**2+z**2)
-    #     th = sp.acos(z/r)
-    #     phi = sp.atan(y/x)
-
-    #     M_xyz_to_sph = sp.Matrix([[r.diff(x), r.diff(y), r.diff(z)],\
-    #                               [th.diff(x), th.diff(y), th.diff(z)],\
-    #                               [phi.diff(x), phi.diff(y), phi.diff(z)],\
-    #                              ])
-
-    #     k = sp.Matrix([k_x, k_y, k_z])
-
-    #     k_sph = M_xyz_to_sph*k
-    #     k_sph = k_sph.subs(x, x_val).subs(y, y_val).subs(z, z_val)
-    #     #k_r, k_th, k_ph = list(k_sph)
-
-    #     return list(k_sph), x_sph
-    #     k_r, r_val, k_th, th_val, k_ph, ph_val
-
-    # def convert_sph_to_xyz(self, k_sph, x_sph):
-    #     k_r, k_th, k_ph = k_sph
-    #     r_val, th_val, ph_val = x_sph
-    #     #x_val, y_val, z_val
-    #     x_xyz = self.convert_to_xyz(r_val, th_val, ph_val)
-
-    #     #r_val, th_val, ph_val = self.convert_to_sph(x_val, y_val, z_val)
-
-    #     r, th, ph = sp.symbols(" r \\theta \\phi ")
-
-    #     x = r * sp.sin(th) * sp.cos(ph)
-    #     y = r * sp.sin(th) * sp.sin(ph)
-    #     z = r * sp.cos(th)
-
-    #     M_sph_to_xyz = sp.Matrix([[x.diff(r), x.diff(th), x.diff(ph)],\
-    #                               [y.diff(r), y.diff(th), y.diff(ph)],\
-    #                               [z.diff(r), z.diff(th), z.diff(ph)],\
-    #                              ])
-
-    #     k = sp.Matrix([k_r, k_th, k_ph])
-
-    #     k_xyz = M_sph_to_xyz*k
-    #     k_xyz = k_xyz.subs(r, r_val).subs(th, th_val).subs(ph, ph_val)
-    #     k_x, k_y, k_z = list(k_xyz)
-
-    #     return list(k_xyz), x_xyz #k_x, x_val, k_y, y_val, k_z, z_val
-
-
-
-
