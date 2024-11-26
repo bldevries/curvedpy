@@ -2,9 +2,13 @@ import sympy as sp
 import numpy as np
 from scipy.integrate import solve_ivp
 import time
-
+from curvedpy import Conversions
 
 class GeodesicIntegratorSchwarzschild:
+
+    conversions = Conversions()
+
+
     def __init__(self, mass=1.0, verbose=False):
         self.M = mass
         self.r_s_value = 2*self.M 
@@ -111,7 +115,7 @@ class GeodesicIntegratorSchwarzschild:
                         verbose = False \
                        ):
 
-        k0_sph, x0_sph = self.convert_xyz_to_sph(k0_xyz, x0_xyz)
+        x0_sph, k0_sph = self.conversions.convert_xyz_to_sph(x0_xyz, k0_xyz)
         k_r_0, k_th_0, k_ph_0 = k0_sph
         r0, th0, ph0 = x0_sph
 
@@ -129,7 +133,9 @@ class GeodesicIntegratorSchwarzschild:
         # THIS IS REDICULOUSLY SLOW, FIX IT!
         k_xyz, x_xyz = [], []
         for i in range(len(k_sph)):
-            k, x = self.convert_sph_to_xyz(k_sph[i], x_sph[i])
+            x, k = self.conversions.convert_sph_to_xyz(x_sph[i], k_sph[i])
+
+            # k, x = self.convert_sph_to_xyz(k_sph[i], x_sph[i])
             k_xyz.append(k)
             x_xyz.append(x)
 
@@ -216,71 +222,71 @@ class GeodesicIntegratorSchwarzschild:
         return result
 
 
-    def convert_to_xyz(self, r, th, ph):
-        z = r*np.cos(th)
-        x = r*np.sin(th)*np.cos(ph)
-        y = r*np.sin(th)*np.sin(ph)
-        return x, y, z
+    # def convert_to_xyz(self, r, th, ph):
+    #     z = r*np.cos(th)
+    #     x = r*np.sin(th)*np.cos(ph)
+    #     y = r*np.sin(th)*np.sin(ph)
+    #     return x, y, z
 
-    def convert_to_sph(self, x, y, z):
-        r = np.sqrt(x**2 + y**2 + z**2)
-        th = np.acos(z/r)
-        ph = np.atan2(y, x) #ph = np.atan(y/x)
-        return r, th, ph
+    # def convert_to_sph(self, x, y, z):
+    #     r = np.sqrt(x**2 + y**2 + z**2)
+    #     th = np.acos(z/r)
+    #     ph = np.atan2(y, x) #ph = np.atan(y/x)
+    #     return r, th, ph
 
 
-    def convert_xyz_to_sph(self, k_xyz, x_xyz ):
-        k_x, k_y, k_z = k_xyz
-        x_val, y_val, z_val = x_xyz
-        #r_val, th_val, ph_val
-        x_sph = self.convert_to_sph(x_val, y_val, z_val)
+    # def convert_xyz_to_sph(self, k_xyz, x_xyz ):
+    #     k_x, k_y, k_z = k_xyz
+    #     x_val, y_val, z_val = x_xyz
+    #     #r_val, th_val, ph_val
+    #     x_sph = self.convert_to_sph(x_val, y_val, z_val)
 
-        x, y, z = sp.symbols(" x y z ")
+    #     x, y, z = sp.symbols(" x y z ")
 
-        r = sp.sqrt(x**2+y**2+z**2)
-        th = sp.acos(z/r)
-        phi = sp.atan(y/x)
+    #     r = sp.sqrt(x**2+y**2+z**2)
+    #     th = sp.acos(z/r)
+    #     phi = sp.atan(y/x)
 
-        M_xyz_to_sph = sp.Matrix([[r.diff(x), r.diff(y), r.diff(z)],\
-                                  [th.diff(x), th.diff(y), th.diff(z)],\
-                                  [phi.diff(x), phi.diff(y), phi.diff(z)],\
-                                 ])
+    #     M_xyz_to_sph = sp.Matrix([[r.diff(x), r.diff(y), r.diff(z)],\
+    #                               [th.diff(x), th.diff(y), th.diff(z)],\
+    #                               [phi.diff(x), phi.diff(y), phi.diff(z)],\
+    #                              ])
 
-        k = sp.Matrix([k_x, k_y, k_z])
+    #     k = sp.Matrix([k_x, k_y, k_z])
 
-        k_sph = M_xyz_to_sph*k
-        k_sph = k_sph.subs(x, x_val).subs(y, y_val).subs(z, z_val)
-        #k_r, k_th, k_ph = list(k_sph)
+    #     k_sph = M_xyz_to_sph*k
+    #     k_sph = k_sph.subs(x, x_val).subs(y, y_val).subs(z, z_val)
+    #     #k_r, k_th, k_ph = list(k_sph)
 
-        return list(k_sph), x_sph
-        #k_r, r_val, k_th, th_val, k_ph, ph_val
+    #     return list(k_sph), x_sph
+    #     k_r, r_val, k_th, th_val, k_ph, ph_val
 
-    def convert_sph_to_xyz(self, k_sph, x_sph):
-        k_r, k_th, k_ph = k_sph
-        r_val, th_val, ph_val = x_sph
-        #x_val, y_val, z_val
-        x_xyz = self.convert_to_xyz(r_val, th_val, ph_val)
+    # def convert_sph_to_xyz(self, k_sph, x_sph):
+    #     k_r, k_th, k_ph = k_sph
+    #     r_val, th_val, ph_val = x_sph
+    #     #x_val, y_val, z_val
+    #     x_xyz = self.convert_to_xyz(r_val, th_val, ph_val)
 
-        #r_val, th_val, ph_val = self.convert_to_sph(x_val, y_val, z_val)
+    #     #r_val, th_val, ph_val = self.convert_to_sph(x_val, y_val, z_val)
 
-        r, th, ph = sp.symbols(" r \\theta \\phi ")
+    #     r, th, ph = sp.symbols(" r \\theta \\phi ")
 
-        x = r * sp.sin(th) * sp.cos(ph)
-        y = r * sp.sin(th) * sp.sin(ph)
-        z = r * sp.cos(th)
+    #     x = r * sp.sin(th) * sp.cos(ph)
+    #     y = r * sp.sin(th) * sp.sin(ph)
+    #     z = r * sp.cos(th)
 
-        M_sph_to_xyz = sp.Matrix([[x.diff(r), x.diff(th), x.diff(ph)],\
-                                  [y.diff(r), y.diff(th), y.diff(ph)],\
-                                  [z.diff(r), z.diff(th), z.diff(ph)],\
-                                 ])
+    #     M_sph_to_xyz = sp.Matrix([[x.diff(r), x.diff(th), x.diff(ph)],\
+    #                               [y.diff(r), y.diff(th), y.diff(ph)],\
+    #                               [z.diff(r), z.diff(th), z.diff(ph)],\
+    #                              ])
 
-        k = sp.Matrix([k_r, k_th, k_ph])
+    #     k = sp.Matrix([k_r, k_th, k_ph])
 
-        k_xyz = M_sph_to_xyz*k
-        k_xyz = k_xyz.subs(r, r_val).subs(th, th_val).subs(ph, ph_val)
-        k_x, k_y, k_z = list(k_xyz)
+    #     k_xyz = M_sph_to_xyz*k
+    #     k_xyz = k_xyz.subs(r, r_val).subs(th, th_val).subs(ph, ph_val)
+    #     k_x, k_y, k_z = list(k_xyz)
 
-        return list(k_xyz), x_xyz #k_x, x_val, k_y, y_val, k_z, z_val
+    #     return list(k_xyz), x_xyz #k_x, x_val, k_y, y_val, k_z, z_val
 
 
 
