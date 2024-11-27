@@ -121,24 +121,11 @@ class GeodesicIntegratorSchwarzschild:
                        
 
         k_r, r, k_th, th, k_ph, ph = result.y
-        # k_sph = list(zip(*[k_r, k_th, k_ph]))
-        # x_sph = list(zip(*[r, th, ph]))
-
-        # # THIS IS REDICULOUSLY SLOW, FIX IT!
-        # k_xyz, x_xyz = [], []
-        # for i in range(len(k_sph)):
-        #     x, k = self.conversions.convert_sph_to_xyz(x_sph[i], k_sph[i])
-
-        #     # k, x = self.convert_sph_to_xyz(k_sph[i], x_sph[i])
-        #     k_xyz.append(k)
-        #     x_xyz.append(x)
-
 
         k_sph = np.array([k_r, k_th, k_ph])
         x_sph = np.array([r, th, ph])
         x_xyz, k_xyz = self.conversions.convert_sph_to_xyz(x_sph, k_sph)
 
-        #return list(zip(*k_xyz)), list(zip(*x_xyz)), result #k_xyz, x_xyz , result
         return k_xyz, x_xyz, result
 
     ################################################################################################
