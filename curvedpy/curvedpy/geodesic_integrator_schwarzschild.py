@@ -8,7 +8,7 @@ class GeodesicIntegratorSchwarzschild:
 
     conversions = Conversions()
 
-    def __init__(self, mass=1.0, verbose=False):
+    def __init__(self, mass=1.0, time_like = False, verbose=False):
 
         # Connection Symbols
         def gamma_func(sigma, mu, nu):
@@ -28,7 +28,7 @@ class GeodesicIntegratorSchwarzschild:
         self.r_s_value = 2*self.M 
 
         # Type of geodesic
-        self.time_like = False # No Massive particle geodesics yet
+        self.time_like = time_like # No Massive particle geodesics yet
 
         # Define symbolic variables
         self.t, self.r, self.th, self.ph, self.r_s = sp.symbols("t r \\theta \\phi r_s")
@@ -96,7 +96,7 @@ class GeodesicIntegratorSchwarzschild:
     #
     ################################################################################################
     def calc_trajectory(self, \
-                        k0_xyz = [1, 0.0, 0.0], x0_xyz = [-10, 10, 0], \
+                        k0_xyz = np.array([1, 0.0, 0.0]), x0_xyz = np.array([-10, 10, 0]), \
                         R_end = -1,\
                         curve_start = 0, \
                         curve_end = 50, \
@@ -108,6 +108,12 @@ class GeodesicIntegratorSchwarzschild:
                         atol = 1e-6,\
                         verbose = False \
                        ):
+
+        if not isinstance(x0_xyz,np.ndarray):
+            x0_xyz = np.array(x0_xyz)
+
+        if not isinstance(k0_xyz,np.ndarray):
+            k0_xyz = np.array(k0_xyz)
 
         x0_sph, k0_sph = self.conversions.convert_xyz_to_sph(x0_xyz, k0_xyz)
         k_r_0, k_th_0, k_ph_0 = k0_sph

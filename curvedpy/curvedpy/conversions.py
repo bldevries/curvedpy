@@ -41,7 +41,7 @@ class Conversions:
                                      k_sph, "numpy")
 
     def setup_sph_to_xyz_conversion(self):
-        r, th, ph = sp.symbols(" r \\theta \\phi ")
+        r, th, ph = sp.symbols(" r th ph ")
         k_r, k_th, k_ph = sp.symbols(" k_r k_th k_ph")
 
         x = r * sp.sin(th) * sp.cos(ph)
@@ -58,7 +58,7 @@ class Conversions:
 
         # v_xyz = M_sph_to_xyz*v
         k_xyz = M_sph_to_xyz*k
-
+        #k_xyz = k_xyz.T
         # self.convert_v_sph_to_v_xyz = sp.lambdify([r, th, ph], \
         #                              v_xyz, "numpy")
 
@@ -68,18 +68,20 @@ class Conversions:
     def convert_sph_to_xyz(self, x_sph, k_sph):
         v_xyz = self.coord_conversion_sph_to_xyz(*x_sph)
         k_xyz = self.convert_k_sph_to_k_xyz(*x_sph, *k_sph)
-        return v_xyz, k_xyz.flatten()
+        k_xyz = k_xyz.reshape(*k_sph.shape)
+        return v_xyz, k_xyz#.flatten()
 
     def convert_xyz_to_sph(self, x_xyz, k_xyz):
         v_sph = self.coord_conversion_xyz_to_sph(*x_xyz)
         k_sph = self.convert_k_xyz_to_k_sph(*x_xyz, *k_xyz)
-        return v_sph, k_sph.flatten()
+        k_sph = k_sph.reshape(*k_xyz.shape)
+        return v_sph, k_sph#.flatten()
 
     def coord_conversion_sph_to_xyz(self, r, th, ph):
         z = r*np.cos(th)
         x = r*np.sin(th)*np.cos(ph)
         y = r*np.sin(th)*np.sin(ph)
-        return x, y, z
+        return np.array([x, y, z])
 
     def coord_conversion_xyz_to_sph(self, x, y, z):
         r = np.sqrt(x**2 + y**2 + z**2)
