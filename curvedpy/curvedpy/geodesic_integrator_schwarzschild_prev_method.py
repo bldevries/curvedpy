@@ -5,7 +5,7 @@ import time
 import multiprocessing as mp
 from curvedpy import Conversions
 
-class GeodesicIntegratorSchwarzschild:
+class GeodesicIntegratorSchwarzschild_prev_method:
 
     conversions = Conversions()
 
@@ -79,9 +79,6 @@ class GeodesicIntegratorSchwarzschild:
         if verbose: print("Done norm of k")
 
         # Lambdify versions
-        self.dk_t_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
-                                      self.k_t, self.t, self.r_s], \
-                                     self.dk_t, "numpy")
         self.dk_r_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
                                       self.k_t, self.t, self.r_s], \
                                      self.dk_r, "numpy")
@@ -133,10 +130,7 @@ class GeodesicIntegratorSchwarzschild:
             pool.close()    
 
         else:
-            if len(k0_xyz) == 1:
-                return self.calc_trajectory_xyz(k0_xyz[0], x0_xyz[0], *args, **kargs)
-            else:
-                return [self.calc_trajectory_xyz(k0_xyz[i], x0_xyz[i], *args, **kargs) for i in range(len(x0_xyz))]
+            return [self.calc_trajectory_xyz(k0_xyz[i], x0_xyz[i], *args, **kargs) for i in range(len(x0_xyz))]
 
 
     ################################################################################################
@@ -156,6 +150,8 @@ class GeodesicIntegratorSchwarzschild:
                         verbose = False \
                        ):
 
+        print(curve_start, curve_end)
+
         if not isinstance(x0_xyz,np.ndarray):
             x0_xyz = np.array(x0_xyz)
 
@@ -173,19 +169,11 @@ class GeodesicIntegratorSchwarzschild:
                         verbose = verbose )
                        
 
-        k_r, r, k_th, th, k_ph, ph, k_t = result.y
-        t = result.t
+        k_r, r, k_th, th, k_ph, ph = result.y
 
         k_sph = np.array([k_r, k_th, k_ph])
         x_sph = np.array([r, th, ph])
-
-        # SHOULD I NOT CHANGE COORDS USING 4 VECTORS????
         x_xyz, k_xyz = self.conversions.convert_sph_to_xyz(x_sph, k_sph)
-
-        x4_xyz = np.array([t, *x_xyz])
-        k4_xyz = np.array([k_t, *k_xyz])
-
-        result.update({"k4_xyz": k4_xyz, "x4_xyz": x4_xyz})
 
         return k_xyz, x_xyz, result
 
@@ -206,8 +194,6 @@ class GeodesicIntegratorSchwarzschild:
                         atol = 1e-6,\
                         verbose = False \
                        ):
-        # Calculate from norm of starting condition
-        k_t_0 = self.k_t_from_norm_lamb(k_r_0, r0, k_th_0, th0, k_ph_0, ph0, self.r_s_value)
 
         if R_end == -1:
             R_end = np.inf
@@ -217,36 +203,34 @@ class GeodesicIntegratorSchwarzschild:
         if r0 > self.r_s_value:
             # Step function needed for solve_ivp
             def step(lamb, new):
-                new_k_r, new_r, new_k_th, new_th, new_k_ph, new_ph, new_k_t = new
-                #new_k_t = self.k_t_from_norm_lamb(*new, self.r_s_value)
+                new_k_r, new_r, new_k_th, new_th, new_k_ph, new_ph = new
+                new_k_t = self.k_t_from_norm_lamb(*new, self.r_s_value)
 
-                new_dk_t = self.dk_t_lamb(*new, t = lamb, r_s = self.r_s_value)
+                new_dk_r = self.dk_r_lamb(*new, new_k_t, t = 0, r_s = self.r_s_value)
                 dr = new_k_r
-                new_dk_r = self.dk_r_lamb(*new, t = lamb, r_s = self.r_s_value)
-                dr = new_k_r
-                new_dk_th = self.dk_th_lamb(*new, t = lamb, r_s = self.r_s_value)
+                new_dk_th = self.dk_th_lamb(*new, new_k_t, t = 0, r_s = self.r_s_value)
                 dth = new_k_th
-                new_dk_ph = self.dk_ph_lamb(*new, t = lamb, r_s = self.r_s_value)
+                new_dk_ph = self.dk_ph_lamb(*new, new_k_t, t = 0, r_s = self.r_s_value)
                 dph = new_k_ph
 
-                return( new_dk_r, dr, new_dk_th, dth, new_dk_ph, dph, new_dk_t)
+                return( new_dk_r, dr, new_dk_th, dth, new_dk_ph, dph)
 
             def hit_blackhole(t, y): 
                 eps = 0.5
-                k_r, r, k_th, th, k_ph, ph, k_t = y
+                k_r, r, k_th, th, k_ph, ph = y
                 #if verbose: print("Test Event Hit BH: ", x, y, z, self.r_s_value, x**2 + y**2 + z**2 - self.r_s_value**2)
                 return r - self.r_s_value
             hit_blackhole.terminal = True
 
             def reached_end(t, y): 
                 #k_x, x, k_y, y, k_z, z = y
-                k_r, r, k_th, th, k_ph, ph, k_t = y
+                k_r, r, k_th, th, k_ph, ph = y
                 #print("integrator check end", r, r0)
                 #if verbose: print("Test Event End: ", np.sqrt(x**2 + y**2 + z**2), R_end, x**2 + y**2 + z**2 - R_end**2)
                 return r - R_end
             reached_end.terminal = True
             
-            values_0 = [ k_r_0, r0, k_th_0, th0, k_ph_0, ph0, k_t_0 ]
+            values_0 = [ k_r_0, r0, k_th_0, th0, k_ph_0, ph0 ]
             if nr_points_curve == 0:
                 t_pts = None
             else:
@@ -277,18 +261,3 @@ class GeodesicIntegratorSchwarzschild:
             result = {"start_inside_hole": True}
 
         return result
-
-
-    ################################################################################################
-    # Helper functions
-    ################################################################################################
-
-    # Conserved angular momentum per mass
-    def ang_mom(self, r, k_ph):
-        return r**2*k_ph
-
-    def energy_photon(self, k_r, r, k_ph, M_blackhole):
-        return np.sqrt(k_r**2 +(1-2*M_blackhole/r)*self.ang_mom(r, k_ph)**2/r**2)
-
-    def energy_massive(self, k_r, r, k_ph, M_blackhole):
-        return np.sqrt(k_r**2 +(1-2*M_blackhole/r)*(1+self.ang_mom(r, k_ph)**2/r**2))
