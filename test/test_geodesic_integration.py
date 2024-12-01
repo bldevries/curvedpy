@@ -93,12 +93,13 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         self.converter = cp.Conversions()
 
         self.mass = 1.0
-        self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass)#metric='schwarzschild', mass=1.0)
         self.start_t, self.end_t, self.steps = 0, 60, 60
         self.max_step = 0.1
         self.round_level = 10
 
-    def test_check_conservation_ang_mom(self):
+    def test_check_conserved_quantities_photons(self):
+        self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = False)#metric='schwarzschild', mass=1.0)
+
         k0_sph = np.array([0.0, 0., -0.1]) 
         x0_sph = np.array([3, 1/2*np.pi, 1/4*np.pi])
         x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph)
@@ -113,6 +114,22 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         self.assertTrue( round(np.mean(E),self.round_level) == round(self.gi.energy_photon(k_r = k0_sph[0], r = x0_sph[0], k_ph = k0_sph[2], M_blackhole=self.mass),self.round_level) )
         self.assertTrue( round(np.std(E),self.round_level) == 0.0 )
 
+    def test_check_conserved_quantities_massive_particles(self):
+        self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = True)#metric='schwarzschild', mass=1.0)
+
+        k0_sph = np.array([0., 0., -0.1])
+        x0_sph = np.array([20, 1/2*np.pi,0])
+        x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph)
+        k, x, res =  self.gi.calc_trajectory(k0_xyz, x0_xyz, verbose=False, max_step=0.01)#curve_end = 100, nr_points_curve = 1000, 
+        k_r, r, k_th, th, k_ph, ph, k_t = res.y
+
+        L = self.gi.ang_mom(r, k_ph)
+        self.assertTrue( round(np.mean(L),self.round_level) == round(self.gi.ang_mom(x0_sph[0], k0_sph[2]),self.round_level) )
+        self.assertTrue( round(np.std(L),self.round_level) == 0.0 )
+
+        E = self.gi.energy_massive(k_r, r, k_ph, M_blackhole=1)
+        self.assertTrue( round(np.mean(E),self.round_level) == round(self.gi.energy_massive(k_r = k0_sph[0], r = x0_sph[0], k_ph = k0_sph[2], M_blackhole=self.mass),self.round_level) )
+        self.assertTrue( round(np.std(E),self.round_level) == 0.0 )
 
 if __name__ == '__main__':
     unittest.main()

@@ -218,7 +218,6 @@ class GeodesicIntegratorSchwarzschild:
             # Step function needed for solve_ivp
             def step(lamb, new):
                 new_k_r, new_r, new_k_th, new_th, new_k_ph, new_ph, new_k_t = new
-                #new_k_t = self.k_t_from_norm_lamb(*new, self.r_s_value)
 
                 new_dk_t = self.dk_t_lamb(*new, t = lamb, r_s = self.r_s_value)
                 dr = new_k_r
@@ -234,15 +233,11 @@ class GeodesicIntegratorSchwarzschild:
             def hit_blackhole(t, y): 
                 eps = 0.5
                 k_r, r, k_th, th, k_ph, ph, k_t = y
-                #if verbose: print("Test Event Hit BH: ", x, y, z, self.r_s_value, x**2 + y**2 + z**2 - self.r_s_value**2)
                 return r - self.r_s_value
             hit_blackhole.terminal = True
 
             def reached_end(t, y): 
-                #k_x, x, k_y, y, k_z, z = y
                 k_r, r, k_th, th, k_ph, ph, k_t = y
-                #print("integrator check end", r, r0)
-                #if verbose: print("Test Event End: ", np.sqrt(x**2 + y**2 + z**2), R_end, x**2 + y**2 + z**2 - R_end**2)
                 return r - R_end
             reached_end.terminal = True
             
