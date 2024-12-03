@@ -11,11 +11,6 @@ class Conversions:
 
 
     def setup_xyz_to_sph_conversion(self):
-        #k_x, k_y, k_z = k_xyz
-        #x_val, y_val, z_val = x_xyz
-        #r_val, th_val, ph_val
-        #x_sph = self.convert_to_sph(x_val, y_val, z_val)
-
         x, y, z = sp.symbols(" x y z ")
         k_x, k_y, k_z = sp.symbols(" k_x k_y k_z")
 
@@ -29,14 +24,7 @@ class Conversions:
                                  ])
 
         k = sp.Matrix([k_x, k_y, k_z])
-
         k_sph = M_xyz_to_sph*k
-        #k_sph = k_sph.subs(x, x_val).subs(y, y_val).subs(z, z_val)
-        #k_r, k_th, k_ph = list(k_sph)
-
-        #return list(k_sph), x_sph
-        #k_r, r_val, k_th, th_val, k_ph, p
-
         self.convert_k_xyz_to_k_sph = sp.lambdify([x, y, z, k_x, k_y, k_z], \
                                      k_sph, "numpy")
 
@@ -55,13 +43,7 @@ class Conversions:
 
         v = sp.Matrix([r, th , ph])
         k = sp.Matrix([k_r, k_th, k_ph])
-
-        # v_xyz = M_sph_to_xyz*v
         k_xyz = M_sph_to_xyz*k
-        #k_xyz = k_xyz.T
-        # self.convert_v_sph_to_v_xyz = sp.lambdify([r, th, ph], \
-        #                              v_xyz, "numpy")
-
         self.convert_k_sph_to_k_xyz = sp.lambdify([r, th, ph, k_r, k_th, k_ph], \
                                      k_xyz, "numpy")
 
@@ -69,13 +51,12 @@ class Conversions:
         v_xyz = self.coord_conversion_sph_to_xyz(*x_sph)
         k_xyz = self.convert_k_sph_to_k_xyz(*x_sph, *k_sph)
         k_xyz = k_xyz.reshape(*k_sph.shape)
-        return v_xyz, k_xyz#.flatten()
-
+        return v_xyz, k_xyz
     def convert_xyz_to_sph(self, x_xyz, k_xyz):
         v_sph = self.coord_conversion_xyz_to_sph(*x_xyz)
         k_sph = self.convert_k_xyz_to_k_sph(*x_xyz, *k_xyz)
         k_sph = k_sph.reshape(*k_xyz.shape)
-        return v_sph, k_sph#.flatten()
+        return v_sph, k_sph
 
     def coord_conversion_sph_to_xyz(self, r, th, ph):
         z = r*np.cos(th)
@@ -88,18 +69,3 @@ class Conversions:
         th = np.acos(z/r)
         ph = np.atan2(y, x) #ph = np.atan(y/x)
         return r, th, ph
-
-    # def convert_sph_to_xyz(self, k_sph, x_sph):
-    #     k_r, k_th, k_ph = k_sph
-    #     r_val, th_val, ph_val = x_sph
-    #     #x_val, y_val, z_val
-    #     x_xyz = self.convert_to_xyz(r_val, th_val, ph_val)
-
-    #     #r_val, th_val, ph_val = self.convert_to_sph(x_val, y_val, z_val)
-
-    #     ...
- 
-    #     k_xyz = k_xyz.subs(r, r_val).subs(th, th_val).subs(ph, ph_val)
-    #     k_x, k_y, k_z = list(k_xyz)
-
-    #     return list(k_xyz), x_xyz #k_x, x_val, k_y, y_val, k_z, z_val

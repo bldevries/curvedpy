@@ -6,6 +6,9 @@ import random
 
 # python -m unittest discover -v test
 
+################################################################################################
+# Test to see if the spherical to cartesian conversion functions are consistent
+################################################################################################
 class TestConversions(unittest.TestCase):
     def setUp(self):
         self.converter = cp.Conversions()
@@ -22,6 +25,10 @@ class TestConversions(unittest.TestCase):
         self.assertTrue( bool((x0_xyz == [round(v, round_lvl) for v in x0_xyz_new]).all()) )
 
 
+################################################################################################
+# Test to check if the geodesic is the same in the other direction. This means the 
+# metric is not time dependent.
+################################################################################################
 
 class TestCurvedpySchwarzschild(unittest.TestCase):
 
@@ -69,25 +76,30 @@ class TestCurvedpySchwarzschild(unittest.TestCase):
 
 
 
-    def test_check_constant_kt(self):
-        k0_xyz = np.array([1, 0.0, 0.0])
-        x0_xyz = np.array([-10, 10, 0])
+    # def test_check_constant_kt(self):
+    #     k0_xyz = np.array([1, 0.0, 0.0])
+    #     x0_xyz = np.array([-10, 10, 0])
 
-        k_xyz, x_xyz, line = self.gi.calc_trajectory(k0_xyz, x0_xyz, \
-                                  curve_start = self.start_t, \
-                                  curve_end = self.end_t, \
-                                  nr_points_curve = self.steps,\
-                                 max_step=self.max_step)
+    #     k_xyz, x_xyz, line = self.gi.calc_trajectory(k0_xyz, x0_xyz, \
+    #                               curve_start = self.start_t, \
+    #                               curve_end = self.end_t, \
+    #                               nr_points_curve = self.steps,\
+    #                              max_step=self.max_step)
     
-        k_r, r, k_th, th, k_ph, ph, k_t = line.y
-        k_t = self.gi.k_t_from_norm_lamb(k_r, r, k_th, th, k_ph, ph, self.gi.r_s_value)
+    #     k_r, r, k_th, th, k_ph, ph, k_t = line.y
+    #     k_t = self.gi.k_t_from_norm_lamb(k_r, r, k_th, th, k_ph, ph, self.gi.r_s_value)
 
-        self.assertTrue( bool(np.std(k_t) < 0.077) ) # Could be something to improve?
+    #     self.assertTrue( bool(np.std(k_t) < 0.077) ) # Could be something to improve?
 
-        # Also check if the norm of a null ray in nicely zero
-        norm_k = self.gi.norm_k_lamb(k_t, k_r, r, k_th, th, k_ph, ph, self.gi.r_s_value)
-        self.assertTrue( round(np.std(norm_k),8) == 0.0 )
+    #     # Also check if the norm of a null ray in nicely zero
+    #     norm_k = self.gi.norm_k_lamb(k_t, k_r, r, k_th, th, k_ph, ph, self.gi.r_s_value)
+    #     self.assertTrue( round(np.std(norm_k),8) == 0.0 )
 
+
+################################################################################################
+# Testing if the energy and angular momentum is conserved for orbits of photons or massive particles.
+# This test is similar to what Bronzwaer et al. 18 and Bronzwaer et al. 21
+################################################################################################
 class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
     def setUp(self):
         self.converter = cp.Conversions()

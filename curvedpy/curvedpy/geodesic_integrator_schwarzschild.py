@@ -2,7 +2,7 @@ import sympy as sp
 import numpy as np
 from scipy.integrate import solve_ivp
 import time
-import multiprocessing as mp
+#import multiprocessing as mp
 from curvedpy import Conversions
 
 class GeodesicIntegratorSchwarzschild:
@@ -70,7 +70,7 @@ class GeodesicIntegratorSchwarzschild:
                                                self.r_s], self.norm_k, "numpy")
 
         # Now we calculate k_t using the norm. This eliminates one of the differential equations.
-        # time_like = True: calculates a geodesic for a massive particle (not implemented yet)
+        # time_like = True: calculates a geodesic for a massive particle
         # time_like = False: calculates a geodesic for a photon
         if (self.time_like):
             self.k_t_from_norm = sp.solve(self.norm_k+1, self.k_t)[1]
@@ -100,7 +100,7 @@ class GeodesicIntegratorSchwarzschild:
     #
     ################################################################################################
     def calc_trajectory(self, k0_xyz, x0_xyz, *args, **kargs):
-        mp_on = False
+        #mp_on = False
 
         if not isinstance(k0_xyz, np.ndarray): k0_xyz = np.array(k0_xyz)
         if not isinstance(x0_xyz, np.ndarray): x0_xyz = np.array(x0_xyz)
@@ -122,21 +122,20 @@ class GeodesicIntegratorSchwarzschild:
                 print("k or x do not have 3 components")
                 return
 
-        if mp_on == True:
-            print("Doing mp", __name__)
+        # if mp_on == True:
+        #     print("Doing mp", __name__)
 
-            #if __name__ == '__main__':
-            print("Got into main")
-            pool = mp.Pool(mp.cpu_count())
-            print([(k0_xyz_i,x0_xyz_i) for k0_xyz_i, x0_xyz_i in zip(k0_xyz, x0_xyz)])
-            results = [pool.apply(self.calc_trajectory_xyz, args=(k0_xyz_i,x0_xyz_i)) for k0_xyz_i, x0_xyz_i in zip(k0_xyz, x0_xyz)]
-            pool.close()    
+        #     #if __name__ == '__main__':
+        #     print("Got into main")
+        #     pool = mp.Pool(mp.cpu_count())
+        #     results = [pool.apply(self.calc_trajectory_xyz, args=(k0_xyz_i,x0_xyz_i)) for k0_xyz_i, x0_xyz_i in zip(k0_xyz, x0_xyz)]
+        #     pool.close()    
 
+        # else:
+        if len(k0_xyz) == 1:
+            return self.calc_trajectory_xyz(k0_xyz[0], x0_xyz[0], *args, **kargs)
         else:
-            if len(k0_xyz) == 1:
-                return self.calc_trajectory_xyz(k0_xyz[0], x0_xyz[0], *args, **kargs)
-            else:
-                return [self.calc_trajectory_xyz(k0_xyz[i], x0_xyz[i], *args, **kargs) for i in range(len(x0_xyz))]
+            return [self.calc_trajectory_xyz(k0_xyz[i], x0_xyz[i], *args, **kargs) for i in range(len(x0_xyz))]
 
 
     ################################################################################################

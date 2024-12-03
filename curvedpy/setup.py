@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 VERSION = '0.0.1' 
 DESCRIPTION = 'General Relativistic Geodesic Integrator'
-LONG_DESCRIPTION = '...'
+LONG_DESCRIPTION = 'Curvedpy can be used to calculate geodesics (trajectories) for different metrics and for both photons and massive particles.'
 
 # Setting up
 setup(
@@ -15,13 +15,13 @@ setup(
         long_description=LONG_DESCRIPTION,
         packages=find_packages(),
         install_requires=["numpy", "scipy", "sympy"], # add any additional packages that 
+        license = " GPL-3.0"
         # needs to be installed along with your package. Eg: 'caer'
         
         keywords=['python', 'relativistic', 'ray', 'tracer', 'blackhole', 'astronomy', 'physics', 'numerical'],
         classifiers= [
             "Development Status :: 3 - Alpha",
             "Intended Audience :: Education",
-            "Programming Language :: Python :: 2",
             "Programming Language :: Python :: 3",
             "Operating System :: MacOS :: MacOS X",
             "Operating System :: Microsoft :: Windows",
