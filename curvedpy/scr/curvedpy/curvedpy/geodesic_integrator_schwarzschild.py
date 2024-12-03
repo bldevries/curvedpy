@@ -230,9 +230,10 @@ class GeodesicIntegratorSchwarzschild:
                 return( new_dk_r, dr, new_dk_th, dth, new_dk_ph, dph, new_dk_t)
 
             def hit_blackhole(t, y): 
-                eps = 0.5
+                eps = 0.01
                 k_r, r, k_th, th, k_ph, ph, k_t = y
-                return r - self.r_s_value
+                #if verbose: print("Event - hit_blackhole: ", r-self.r_s_value)
+                return r - (self.r_s_value+eps)
             hit_blackhole.terminal = True
 
             def reached_end(t, y): 
