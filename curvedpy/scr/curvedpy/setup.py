@@ -1,3 +1,5 @@
+# https://packaging.python.org/en/latest/tutorials/packaging-projects/
+
 from setuptools import setup, find_packages
 
 VERSION = '0.0.1' 
@@ -15,9 +17,9 @@ setup(
         long_description=LONG_DESCRIPTION,
         packages=find_packages(),
         install_requires=["numpy", "scipy", "sympy"], # add any additional packages that 
-        license = " GPL-3.0"
+        license = " GPL-3.0",
         # needs to be installed along with your package. Eg: 'caer'
-        
+        url= "https://github.com/bldevries/curvedpy",
         keywords=['python', 'relativistic', 'ray', 'tracer', 'blackhole', 'astronomy', 'physics', 'numerical'],
         classifiers= [
             "Development Status :: 3 - Alpha",

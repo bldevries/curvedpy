@@ -1,0 +1,16 @@
+setup.py
+curvedpy/__init__.py
+curvedpy/conversions.py
+curvedpy/geodesic_integrator_isotropic_xyz.py
+curvedpy/geodesic_integrator_schwarzschild.py
+curvedpy/geodesic_integrator_schwarzschild_prev_method.py
+curvedpy/interpolation.py
+curvedpy/old_SchwarzschildGeodesic.py
+curvedpy/old_conversions.py
+curvedpy/old_geodesic_integrator.py
+curvedpy/utils.py
+curvedpy.egg-info/PKG-INFO
+curvedpy.egg-info/SOURCES.txt
+curvedpy.egg-info/dependency_links.txt
+curvedpy.egg-info/requires.txt
+curvedpy.egg-info/top_level.txt
