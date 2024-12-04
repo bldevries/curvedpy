@@ -10,9 +10,9 @@ Check out my other repo for some images and animations generated of blackholes u
 ## Installation
 Just install from pip from this in your preferred environment:
 
-pip install curvedpy
+<i>pip install curvedpy</i>
 
-The dependencies are few, most notably it used <a href="https://www.sympy.org/en/index.html" target="_blank">sympy</a>.
+The dependencies are few, most notably it uses <a href="https://www.sympy.org/en/index.html" target="_blank">sympy</a>.
 
 ## Tutorials
 For the basics on how to use the package, see this [notebook](https://github.com/bldevries/curvedpy/blob/main/tutorials/Tutorial_1_calc_geodesic.ipynb)
