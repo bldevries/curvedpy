@@ -3,7 +3,7 @@
 
 from setuptools import setup, find_packages
 
-VERSION = '0.0.1.dev2' 
+VERSION = '0.0.1' 
 DESCRIPTION = 'General Relativistic Geodesic Integrator'
 LONG_DESCRIPTION = 'Curvedpy can be used to calculate geodesics (trajectories) for different metrics and for both photons and massive particles.'
 
