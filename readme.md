@@ -3,14 +3,16 @@
 Author: <a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de Vries</a>. PhD and Scientific visualisation advisor at <a href="https://www.surf.nl" target="_blank">SURF</a>.
 
 ## Introduction
-This python package is written to accompany the relativistic render engine I developed for Blender: https://github.com/bldevries/blackhole_geodesic_calculator. But this package can be used for other projects just as well. It aims to calculate geodesics (trajectories) of massive particles and photons in curved space-time (different metrics). As of now (4 Dec 2024) the Schwarzschild metric (a spherically symmetric blackhole) is implemented. The Kerr blackhole (a rotating blackhole) will follow soon and is in developement. In the following sections I will explain how to install and use this package as well as some background information on how it works.
+This python package is written to accompany the <a href="https://github.com/bldevries/blackhole_geodesic_calculator" target="_blank">relativistic render engine</a> I developed for Blender. But this package can be used for other projects just as well. It aims to calculate geodesics (trajectories) of massive particles and photons in curved space-time (different metrics). As of now (4 Dec 2024) the Schwarzschild metric (a spherically symmetric blackhole) is implemented. The Kerr blackhole (a rotating blackhole) will follow soon and is in developement. In the following sections I will explain how to install and use this package as well as some background information on how it works.
 
-Check out my other repo for some images and animations generated of blackholes using Blender: https://github.com/bldevries/blackhole_geodesic_calculator
+Check out my other repo for some images and animations generated of blackholes using Blender: <a href="https://github.com/bldevries/blackhole_geodesic_calculator" target="_blank">https://github.com/bldevries/blackhole_geodesic_calculator</a>
 
 ## Installation
 Just install from pip from this in your preferred environment:
+
 pip install curvedpy
-The dependencies are few, most notably it used [sympy](https://www.sympy.org/en/index.html).
+
+The dependencies are few, most notably it used <a href="https://www.sympy.org/en/index.html" target="_blank">sympy</a>.
 
 ## Tutorials
 For the basics on how to use the package, see this [notebook](https://github.com/bldevries/curvedpy/blob/main/tutorials/Tutorial_1_calc_geodesic.ipynb)
