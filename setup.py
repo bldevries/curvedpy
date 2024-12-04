@@ -1,8 +1,9 @@
+# https://betterscientificsoftware.github.io/python-for-hpc/tutorials/python-pypi-packaging/
 # https://packaging.python.org/en/latest/tutorials/packaging-projects/
 
 from setuptools import setup, find_packages
 
-VERSION = '0.0.1' 
+VERSION = '0.0.1.dev2' 
 DESCRIPTION = 'General Relativistic Geodesic Integrator'
 LONG_DESCRIPTION = 'Curvedpy can be used to calculate geodesics (trajectories) for different metrics and for both photons and massive particles.'
 
