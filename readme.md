@@ -2,8 +2,8 @@
 <img style="float: right;" src="images/surf_vis_logo.png" alt="" width="150" height="auto">
 </p>
 
-| :---         |          ---: |
 | git status   | git status 2 |
+| :---         |          ---: |
 
 # Curvedpy - a general relativity toolkit
 
