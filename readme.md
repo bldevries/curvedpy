@@ -1,7 +1,8 @@
 # Curvedpy - a general relativity toolkit
 
 Author: <a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de Vries</a>. PhD and Scientific visualisation advisor at <a href="https://www.surf.nl" target="_blank">SURF</a>.
-<img src="images/surf_vis_logo.png" alt="" width="400" height="auto">
+
+<img src="images/surf_vis_logo.png" alt="" width="150" height="auto">
 
 
 ## Introduction
