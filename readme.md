@@ -1,6 +1,8 @@
 # Curvedpy - a general relativity toolkit
 
 Author: <a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de Vries</a>. PhD and Scientific visualisation advisor at <a href="https://www.surf.nl" target="_blank">SURF</a>.
+<img src="images/surf_vis_logo.png" alt="" width="400" height="auto">
+
 
 ## Introduction
 This python package is written to accompany the <a href="https://github.com/bldevries/blackhole_geodesic_calculator" target="_blank">relativistic render engine</a> I developed for Blender. But this package can be used for other projects just as well. It aims to calculate geodesics (trajectories) of massive particles and photons in curved space-time (different metrics). As of now (4 Dec 2024) the Schwarzschild metric (a spherically symmetric blackhole) is implemented. The Kerr blackhole (a rotating blackhole) will follow soon and is in developement. In the following sections I will explain how to install and use this package as well as some background information on how it works.
