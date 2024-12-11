@@ -69,3 +69,13 @@ class Conversions:
         th = np.acos(z/r)
         ph = np.atan2(y, x) #ph = np.atan(y/x)
         return r, th, ph
+
+
+    ####################################################
+    # Sympy based functions
+    ####################################################
+    #def vec_to_oneform(self, vec, metric):
+
+
+
+

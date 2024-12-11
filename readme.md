@@ -7,6 +7,9 @@ This python package is written to accompany the <a href="https://github.com/blde
 
 Check out my other repo for some images and animations generated of blackholes using Blender: <a href="https://github.com/bldevries/blackhole_geodesic_calculator" target="_blank">https://github.com/bldevries/blackhole_geodesic_calculator</a>
 
+## Using curvedpy
+If you find curvedpy usefull and use it in your projects, please give me credit by mentioning this repo!
+
 ## Installation
 Just install from pip from this in your preferred environment:
 
