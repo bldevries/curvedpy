@@ -5,20 +5,21 @@ import time
 #import multiprocessing as mp
 from curvedpy import Conversions
 
-class GeodesicIntegratorSchwarzschild:
+class GeodesicIntegratorKerr:
 
     conversions = Conversions()
 
-    def __init__(self, mass=1.0, time_like = False, verbose=False):
+    def __init__(self, mass=1.0, a = 0.0, time_like = False, verbose=False, calc_kt_per_ray=True):
+        
+        self.calc_kt_per_ray = calc_kt_per_ray
 
         # Connection Symbols
-        def gamma_func(sigma, mu, nu):
+        def gamma_func_old(sigma, mu, nu):
             coord_symbols = [self.t, self.r, self.th, self.ph]
             g_sigma_mu_nu = 0
             for rho in [0,1,2,3]:
+                # WRONG, the inverse of g is more complicated because of off diagonal terms
                 if self.g[sigma, rho] != 0:
-                    # CAREFULL - the inverse of g is only this simple since the Schwarzschild 
-                    # metric is diagonal!
                     g_sigma_mu_nu += 1/2 * 1/self.g[sigma, rho] * (\
                                     self.g[nu, rho].diff(coord_symbols[mu]) + \
                                     self.g[rho, mu].diff(coord_symbols[nu]) - \
@@ -27,28 +28,71 @@ class GeodesicIntegratorSchwarzschild:
                     g_sigma_mu_nu += 0
             return g_sigma_mu_nu
 
+        # Connection Symbols
+        def gamma_func(sigma, mu, nu):
+            coord_symbols = [self.t, self.r, self.th, self.ph]
+            g_sigma_mu_nu = 0
+            for rho in [0,1,2,3]:
+                # WRONG, the inverse of g is more complicated because of off diagonal terms
+                if self.g[sigma, rho] != 0:
+                    g_sigma_mu_nu += 1/2 * self.g_inv[sigma, rho] * (\
+                                    self.g_diff[mu][nu, rho] + \
+                                    self.g_diff[nu][rho, mu] - \
+                                    self.g_diff[rho][mu, nu] )
+                else:
+                    g_sigma_mu_nu += 0
+            return g_sigma_mu_nu
+
         self.M = mass
         self.r_s_value = 2*self.M 
+        self.a_value = a #Since we integrate back in time
 
         # Type of geodesic
         self.time_like = time_like # No Massive particle geodesics yet
 
         # Define symbolic variables
-        self.t, self.r, self.th, self.ph, self.r_s = sp.symbols("t r \\theta \\phi r_s")
+        self.t, self.r, self.th, self.ph, self.r_s, self.a = sp.symbols("t r \\theta \\phi r_s a")
+        self.Sig, self.Del = sp.symbols("\\Sigma \\Delta")
+        self.Sig_sub = self.r**2 + self.a**2 * sp.cos(self.th)**2
+        self.Del_sub = self.r**2 - self.r_s*self.r + self.a**2
 
-        self.g = sp.Matrix([\
-            [-1*(1-self.r_s/self.r), 0, 0, 0],\
-            [0, 1/(1-self.r_s/self.r), 0, 0],\
-            [0, 0, self.r**2, 0],\
-            [0, 0, 0, self.r**2 * sp.sin(self.th)**2]\
+        g00 = -(1-self.r_s*self.r/self.Sig)
+        g11 = self.Sig/self.Del
+        g22 = self.Sig
+        #g33 = (self.r**2 + self.a**2 + self.r_s*self.r*self.a**2 * sp.sin(self.th)**2 / self.Sig )*sp.sin(self.th)**2 
+        g33 = (sp.sin(self.th)**2/self.Sig)*((self.r**2 + self.a**2)**2 - self.a**2 * self.Del *sp.sin(self.th)**2)
+        g03 = -(self.r_s * self.r * self.a * sp.sin(self.th)**2/self.Sig) # Carefull, no 2* here since it comes into the metric twice at 03 and 30
+
+        self.g_simple = sp.Matrix([\
+            [g00, 0, 0, g03],\
+            [0, g11, 0, 0],\
+            [0, 0, g22, 0],\
+            [g03, 0, 0, g33]\
             ])
 
+        self.g = self.g_simple.subs(self.Del, self.Del_sub)
+        self.g = self.g.subs(self.Sig, self.Sig_sub)
+
+        self.g = self.g.subs(self.a, self.a_value)
+
+        self.g_inv = self.g.inv()
+        self.g_inv.simplify()
+
+        if verbose: print("Calculating g_diff")
+        self.g_diff = [self.g.diff(self.t), self.g.diff(self.r), self.g.diff(self.th), self.g.diff(self.ph)]
+        if verbose: print(" Done")
+
         # Connection Symbols
-        self.gam_t = sp.Matrix([[gamma_func(0,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        self.gam_r = sp.Matrix([[gamma_func(1,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        self.gam_th = sp.Matrix([[gamma_func(2,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        self.gam_ph = sp.Matrix([[gamma_func(3,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        if verbose: print("Done connection symbols")
+        if verbose: print("Starting connection symbols")
+        self.gam_t = sp.Matrix([[gamma_func(0,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        if verbose: print("  Done gam_t")
+        self.gam_r = sp.Matrix([[gamma_func(1,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        if verbose: print("  Done gam_r")
+        self.gam_th = sp.Matrix([[gamma_func(2,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        if verbose: print("  Done gam_th")
+        self.gam_ph = sp.Matrix([[gamma_func(3,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        if verbose: print("  Done gam_ph")
+        if verbose: print(" Done connection symbols")
 
 
         # Building up the geodesic equation: 
@@ -69,34 +113,56 @@ class GeodesicIntegratorSchwarzschild:
         self.k = sp.Matrix([self.k_t, self.k_r, self.k_th, self.k_ph])
         self.norm_k = (self.k.T*self.g*self.k)[0]
         self.norm_k_lamb = sp.lambdify([self.k_t, self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
-                                               self.r_s], self.norm_k, "numpy")
+                                               self.r_s, self.a], self.norm_k, "numpy")
+        if verbose: print("Done k")
+
 
         # Now we calculate k_t using the norm. This eliminates one of the differential equations.
         # time_like = True: calculates a geodesic for a massive particle
         # time_like = False: calculates a geodesic for a photon
-        if (self.time_like):
-            self.k_t_from_norm = sp.solve(self.norm_k+1, self.k_t)[1]
-        else:
-            self.k_t_from_norm = sp.solve(self.norm_k, self.k_t)[1]
-        if verbose: print("Done norm of k")
+        if not self.calc_kt_per_ray:
+            if (self.time_like):
+                self.k_t_from_norm = sp.solve(self.norm_k+1, self.k_t)[1]
+            else:
+                self.k_t_from_norm = sp.solve(self.norm_k, self.k_t)[1]
+            if verbose: print("Done norm of k")
 
         # Lambdify versions
         self.dk_t_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
-                                      self.k_t, self.t, self.r_s], \
+                                      self.k_t, self.t, self.r_s, self.a], \
                                      self.dk_t, "numpy")
         self.dk_r_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
-                                      self.k_t, self.t, self.r_s], \
+                                      self.k_t, self.t, self.r_s, self.a], \
                                      self.dk_r, "numpy")
         self.dk_th_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
-                                      self.k_t, self.t, self.r_s], \
+                                      self.k_t, self.t, self.r_s, self.a], \
                                      self.dk_th, "numpy")
         self.dk_ph_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
-                                      self.k_t, self.t, self.r_s], \
+                                      self.k_t, self.t, self.r_s, self.a], \
                                      self.dk_ph, "numpy")
-        self.k_t_from_norm_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
-                                               self.r_s], self.k_t_from_norm, "numpy")
+        if not self.calc_kt_per_ray:
+            self.k_t_from_norm_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
+                                                   self.r_s, self.a], self.k_t_from_norm, "numpy")
         if verbose: print("Done lambdifying")
 
+
+
+    ################################################################################################
+    #
+    ################################################################################################
+    def get_k_t_from_norm(self, k_r_0, r0, k_th_0, th0, k_ph_0, ph0):
+        sub_list = [(self.t, 0), (self.r, r0), (self.th, th0), (self.ph, ph0), \
+                    (self.k_r, k_r_0), (self.k_th, k_th_0), (self.k_ph, k_ph_0), \
+                    (self.r_s, self.r_s_value), (self.a, self.a_value)]
+
+
+        if (self.time_like):
+            k_t_from_norm = sp.solve(self.norm_k.subs(sub_list)+1, self.k_t)[1]#[1] #sp.solve(self.norm_k+1, self.k_t)[1]
+        else:
+            k_t_from_norm = sp.solve(self.norm_k.subs(sub_list), self.k_t)[1]#[1] #sp.solve(self.norm_k, self.k_t)[1]
+
+        
+        return k_t_from_norm
 
     ################################################################################################
     #
@@ -163,7 +229,8 @@ class GeodesicIntegratorSchwarzschild:
         if not isinstance(k0_xyz,np.ndarray):
             k0_xyz = np.array(k0_xyz)
 
-        x0_sph, k0_sph = self.conversions.convert_xyz_to_sph(x0_xyz, k0_xyz)
+        if verbose: print("Converting from xyz to sph")
+        x0_sph, k0_sph = self.conversions.convert_xyz_to_bl(x0_xyz, k0_xyz, a = self.a_value)
         k_r_0, k_th_0, k_ph_0 = k0_sph
         r0, th0, ph0 = x0_sph
 
@@ -181,7 +248,7 @@ class GeodesicIntegratorSchwarzschild:
         x_sph = np.array([r, th, ph])
 
         # SHOULD I NOT CHANGE COORDS USING 4 VECTORS????
-        x_xyz, k_xyz = self.conversions.convert_sph_to_xyz(x_sph, k_sph)
+        x_xyz, k_xyz = self.conversions.convert_bl_to_xyz(x_sph, k_sph, self.a_value)
 
         x4_xyz = np.array([t, *x_xyz])
         k4_xyz = np.array([k_t, *k_xyz])
@@ -207,8 +274,15 @@ class GeodesicIntegratorSchwarzschild:
                         atol = 1e-6,\
                         verbose = False \
                        ):
+        if verbose: print("Starting trajectory sph")
+
         # Calculate from norm of starting condition
-        k_t_0 = self.k_t_from_norm_lamb(k_r_0, r0, k_th_0, th0, k_ph_0, ph0, self.r_s_value)
+        if verbose: print("  Getting kt")
+        if self.calc_kt_per_ray:
+            k_t_0 = self.get_k_t_from_norm(k_r_0, r0, k_th_0, th0, k_ph_0, ph0)
+        else:
+            # NOt implemented yet!!
+            k_t_0 = self.k_t_from_norm_lamb(k_r_0, r0, k_th_0, th0, k_ph_0, ph0, self.r_s_value)
 
         if R_end == -1:
             R_end = np.inf
@@ -218,15 +292,21 @@ class GeodesicIntegratorSchwarzschild:
         if r0 > self.r_s_value:
             # Step function needed for solve_ivp
             def step(lamb, new):
+
+                if verbose:
+                    k_r, r, k_th, th, k_ph, ph, k_t = new
+                    x, y, z = self.conversions.coord_conversion_bl_xyz(r, th, ph, self.a_value)
+                    print(round(x, 4), round(y,4), round(z,4))
+
                 new_k_r, new_r, new_k_th, new_th, new_k_ph, new_ph, new_k_t = new
 
-                new_dk_t = self.dk_t_lamb(*new, t = lamb, r_s = self.r_s_value)
+                new_dk_t = self.dk_t_lamb(*new, t = lamb, r_s = self.r_s_value, a = self.a_value)
                 dr = new_k_r
-                new_dk_r = self.dk_r_lamb(*new, t = lamb, r_s = self.r_s_value)
+                new_dk_r = self.dk_r_lamb(*new, t = lamb, r_s = self.r_s_value, a = self.a_value)
                 dr = new_k_r
-                new_dk_th = self.dk_th_lamb(*new, t = lamb, r_s = self.r_s_value)
+                new_dk_th = self.dk_th_lamb(*new, t = lamb, r_s = self.r_s_value, a = self.a_value)
                 dth = new_k_th
-                new_dk_ph = self.dk_ph_lamb(*new, t = lamb, r_s = self.r_s_value)
+                new_dk_ph = self.dk_ph_lamb(*new, t = lamb, r_s = self.r_s_value, a = self.a_value)
                 dph = new_k_ph
 
                 return( new_dk_r, dr, new_dk_th, dth, new_dk_ph, dph, new_dk_t)
@@ -253,6 +333,7 @@ class GeodesicIntegratorSchwarzschild:
             events = [hit_blackhole]
             events.append(reached_end)
 
+            if verbose: print("Starting solver")
             result = solve_ivp(step, (curve_start, curve_end), values_0, t_eval=t_pts, \
                                events=events,\
                                method=method,\
