@@ -140,6 +140,7 @@ class Conversions:
 
     def coord_conversion_xyz_bl(self, x, y, z, a):
         # https://physics.stackexchange.com/questions/739653/how-does-one-covert-from-cartesian-coordinates-to-boyer-lindquist-coordinates
+        # at a = 0, r reduces to spherical coordinate r**2 = x**2+y**2+z**2
         r = (1/np.sqrt(2)) * np.sqrt(np.sqrt(z**4 + 2 * y**2 * z**2 + 2*x**2 * z**2 + 2*a**2 * z**2 + y**4 + 2*x**2*y**2 - 2*a**2*y**2 + x**4 - 2*a**2*x**2 + a**4) +x**2+y**2+z**2-a**2)
         th = np.acos(z/r)
         ph = np.atan2(y,x)
