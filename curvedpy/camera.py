@@ -2,6 +2,9 @@ import numpy as np
 #from curvedpy import Conversions
 from curvedpy import GeodesicIntegratorKerr
 import random
+import os
+import pickle 
+
 
 #import mathutils # I do not want to use this in the end but need to check with how Blender rotates things compared to scipy
 from scipy.spatial.transform import Rotation
@@ -44,6 +47,8 @@ class RelativisticCamera:
         
         self.gi = GeodesicIntegratorKerr(verbose=self.verbose, mass = self.M, a = self.a)
 
+        self.results = None
+
 
 
     def run(self):
@@ -70,7 +75,7 @@ class RelativisticCamera:
                     ray_directions.append(ray_direction)
 
 
-        results = self.gi.calc_trajectory( k0_xyz = ray_directions, \
+        self.results = self.gi.calc_trajectory( k0_xyz = ray_directions, \
                                                         x0_xyz = camera_locations,\
                                                         R_end = -1,\
                                                         curve_start = 0, \
@@ -88,8 +93,21 @@ class RelativisticCamera:
         #if result['start_inside_hole'] == False:
         #    print()
 
-        return results
+        return self.results
 
+
+
+    def save(self, fname, directory):
+        if os.path.isdir(directory):
+            with open(os.path.join(directory, fname+'.pkl'), 'wb') as f:
+                pickle.dump(self.results, f)
+        else:
+            print("dir not found")
+
+    def load(self, filepath):
+        if os.path.isfile(filepath):
+            with open(filepath, 'rb') as f:
+                self.results = pickle.load(f)
 
 # Or do the follwoing:
 # np.array(cameuler.to_matrix())
