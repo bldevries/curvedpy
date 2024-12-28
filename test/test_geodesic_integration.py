@@ -13,7 +13,7 @@ class TestConversions(unittest.TestCase):
     def setUp(self):
         self.converter = cp.Conversions()
 
-    def test_sph_to_xyz_and_back(self):
+    def test_SCHW_sph_to_xyz_and_back(self):
         k0_xyz = np.array([11.322145, 15.136237, 65.246265])
         x0_xyz = np.array([13.461341, 13.461346, 72.300564])
         round_lvl = 6
@@ -23,6 +23,11 @@ class TestConversions(unittest.TestCase):
 
         self.assertTrue( bool((k0_xyz == [round(v, round_lvl) for v in k0_xyz_new]).all()) )
         self.assertTrue( bool((x0_xyz == [round(v, round_lvl) for v in x0_xyz_new]).all()) )
+
+
+
+
+
 
 
 ################################################################################################
@@ -38,7 +43,7 @@ class TestCurvedpySchwarzschild(unittest.TestCase):
         self.max_step = 1
         self.round_level = 4
 
-    def test_check_direction_symmetry(self):  
+    def test_SCHW_check_direction_symmetry(self):  
         # Check if you get the same line forward or backward
 
         # Line in forward direction
@@ -109,7 +114,7 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         self.max_step = 0.1
         self.round_level = 10
 
-    def test_check_conserved_quantities_photons(self):
+    def test_SCHW_check_conserved_quantities_photons(self):
         self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = False)#metric='schwarzschild', mass=1.0)
 
         k0_sph = np.array([0.0, 0., -0.1]) 
@@ -126,7 +131,7 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         self.assertTrue( round(np.mean(E),self.round_level) == round(self.gi.energy_photon(k_r = k0_sph[0], r = x0_sph[0], k_ph = k0_sph[2], M_blackhole=self.mass),self.round_level) )
         self.assertTrue( round(np.std(E),self.round_level) == 0.0 )
 
-    def test_check_conserved_quantities_massive_particles(self):
+    def test_SCHW_check_conserved_quantities_massive_particles(self):
         self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = True)#metric='schwarzschild', mass=1.0)
 
         k0_sph = np.array([0., 0., -0.1])

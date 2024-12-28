@@ -12,7 +12,7 @@ class TestConversions(unittest.TestCase):
         self.converter = cp.Conversions()
 
     # A single test to see if the spherical and cartesian conversion works
-    def test_sph_to_xyz_and_back(self):
+    def test_CONV_sph_to_xyz_and_back(self):
         k0_xyz = np.array([11.322145, 15.136237, 65.246265])
         x0_xyz = np.array([13.461341, 13.461346, 72.300564])
         round_lvl = 6
@@ -24,7 +24,7 @@ class TestConversions(unittest.TestCase):
         self.assertTrue( bool((x0_xyz == [round(v, round_lvl) for v in x0_xyz_new]).all()) )
 
     # Sample of tests to see if the conversion from Boyer-Lindquist to xyz and back conversion works
-    def test_xyz_to_bl_and_back_conversions(self):
+    def test_CONV_xyz_to_bl_and_back_conversions(self):
         round_lvl = 13
         xl, yl, zl = [], [], []
         kxl, kyl, kzl = [], [], []

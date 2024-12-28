@@ -10,7 +10,6 @@ class GeodesicIntegratorKerr:
     conversions = Conversions()
 
     def __init__(self, mass=1.0, a = 0.0, time_like = False, verbose=False, calc_kt_per_ray=True):
-        
         self.calc_kt_per_ray = calc_kt_per_ray
 
         # Connection Symbols
@@ -61,6 +60,7 @@ class GeodesicIntegratorKerr:
 
         # Keeping things simple we alread sub a before any differentiation
         self.g = self.g.subs(self.a, self.a_value)
+        self.g = self.g.subs(self.r_s, self.r_s_value)
 
         # For the Christoffel symbols we need the inverse of the metric
         # For the Kerr metric, which is not diagonal, we need to do this
@@ -90,7 +90,13 @@ class GeodesicIntegratorKerr:
         # Defining the four momentum per mass to use in the Geodesic Equation
         # Derivatives: k_beta = d x^beta / d lambda
         self.k_t, self.k_r, self.k_th, self.k_ph = sp.symbols('k_t k_r k_th k_ph', real=True)
-        self.k = [self.k_t, self.k_r, self.k_th, self.k_ph]
+        self.k = sp.Matrix([self.k_t, self.k_r, self.k_th, self.k_ph])
+        # Also calculate the 1 form of the momentum per mass 4 vector
+        self.k__ = self.g*self.k
+        self.lamb_k__ = sp.lambdify([self.k_t, self.k_r, self.k_th, self.k_ph, self.t, self.r, self.th, self.ph],\
+                                 self.k__, "numpy")
+
+        #self.k = [self.k_t, self.k_r, self.k_th, self.k_ph]
         
         # Calculating the directional derivative of the four momentum per mass, also to use in the Geodesic equation
         # Second derivatives: d k_beta = d^2 x^beta / d lambda^2
@@ -103,7 +109,6 @@ class GeodesicIntegratorKerr:
         # Norm of k
         # the norm of k determines if you have a massive particle (-1), a mass-less photon (0) 
         # or a space-like curve (1)
-        self.k = sp.Matrix([self.k_t, self.k_r, self.k_th, self.k_ph])
         self.norm_k = (self.k.T*self.g*self.k)[0]
         self.norm_k_lamb = sp.lambdify([self.k_t, self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
                                                self.r_s, self.a], self.norm_k, "numpy")
@@ -136,6 +141,8 @@ class GeodesicIntegratorKerr:
             self.k_t_from_norm_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
                                                    self.r_s, self.a], self.k_t_from_norm, "numpy")
         if verbose: print("Done lambdifying")
+
+
 
 
 
@@ -340,6 +347,15 @@ class GeodesicIntegratorKerr:
     ################################################################################################
     # Helper functions
     ################################################################################################
+
+    def one_form(self, vec4, x4):
+        return self.one_form_lamb(*vec4, *x4)
+        # #tv, xv, yv, zv = x
+        # #rv, thv, phv = self.conversions.coord_conversion_xyz_bl(xv, yv, zv, self.a_value)
+        # tv, rv, thv, phv = x_bl
+        # sub_list = [(self.t, tv), (self.r, rv), (self.th, thv), (self.ph, phv), (self.r_s, self.r_s_value), (self.a, self.a_value)]
+        # #print(sub_list)
+        # return self.g.subs(sub_list)
 
     # Conserved angular momentum per mass
     def ang_mom(self, r, k_ph):
