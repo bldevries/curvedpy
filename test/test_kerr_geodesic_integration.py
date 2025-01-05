@@ -108,7 +108,7 @@ class TestCurvedpyKERR_conservation(unittest.TestCase):
         k_r, r, k_th, th, k_ph, ph, k_t = res.y
         k, x = [k_t, k_r, k_th, k_ph], [res.t, r, th, ph]
 
-        k__ = self.gi.lamb_k__(*k, *x)
+        k__ = self.gi.lamb_k__(*k, *x, self.gi.r_s_value, self.gi.a_value)
         k__= k__.reshape(4,k__.shape[-1])
         
         #np.std(k__[0]), np.std(k__[1]), np.std(k__[2]), np.std(k__[3])
@@ -127,7 +127,7 @@ class TestCurvedpyKERR_conservation(unittest.TestCase):
         k_r, r, k_th, th, k_ph, ph, k_t = res.y
         k, x = [k_t, k_r, k_th, k_ph], [res.t, r, th, ph]
 
-        k__ = self.gi.lamb_k__(*k, *x)
+        k__ = self.gi.lamb_k__(*k, *x, self.gi.r_s_value, self.gi.a_value)
         k__= k__.reshape(4,k__.shape[-1])
         
         #np.std(k__[0]), np.std(k__[1]), np.std(k__[2]), np.std(k__[3])

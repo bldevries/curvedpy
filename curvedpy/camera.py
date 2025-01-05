@@ -4,6 +4,7 @@ from curvedpy import GeodesicIntegratorKerr
 import random
 import os
 import pickle 
+import time
 
 
 #import mathutils # I do not want to use this in the end but need to check with how Blender rotates things compared to scipy
@@ -14,7 +15,8 @@ class RelativisticCamera:
     # https://en.wikipedia.org/wiki/Euler_angles
     # https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.transform.Rotation.from_euler.html#scipy.spatial.transform.Rotation.from_euler
     #start_R = Rotation.from_euler(seq='XYZ', angles=[0, 90, 0], degrees=True)
-    start_R = Rotation.from_euler('x', 0, degrees=True)
+    start_R = Rotation.from_euler('x', 45, degrees=True)
+    #rot = Rotation.from_euler('x', 45, degrees=True)#.as_matrix()
 
     def __init__(self,  camera_location = np.array([0.0001, 0, 10]), \
                         camera_rotation_euler=start_R, \
@@ -24,7 +26,9 @@ class RelativisticCamera:
                         a = 0.0,\
                         samples = 1,\
                         sampling_seed = 43,\
-                        verbose=False):
+                        simplify_inv = True,\
+                        verbose=False,\
+                        verbose_init = False):
 
         self.verbose = verbose
 
@@ -32,11 +36,13 @@ class RelativisticCamera:
         self.a = a
 
         self.camera_location = camera_location
+        self.camera_rotation_euler = camera_rotation_euler
         self.camera_rotation_matrix = camera_rotation_euler.as_matrix()
 
         self.field_of_view_x, self.field_of_view_y = field_of_view
 
-        self.width, self.height = resolution
+        self.height, self.width = resolution
+        
         self.aspectratio = self.height/self.width
         
         self.dy = self.aspectratio/self.height  
@@ -45,21 +51,33 @@ class RelativisticCamera:
         self.samples = samples
         self.N = self.samples*self.width*self.height
         
-        self.gi = GeodesicIntegratorKerr(verbose=self.verbose, mass = self.M, a = self.a)
+        if verbose: print("Camera, init integrator")
+        self.gi = GeodesicIntegratorKerr(simplify_inv = simplify_inv, verbose=self.verbose, verbose_init = verbose_init, mass = self.M, a = self.a)
 
         self.results = None
 
 
 
-    def run(self):
-        camera_locations = []
-        ray_directions = []
+    def run(self, verbose=False, verbose_lvl = 1):
 
+        self.ray_end = np.zeros(self.width * self.height * 6) # The six is for 3 end coordinates and 3 end directions
+        self.ray_end.shape = self.height, self.width, 6
+
+        self.ray_blackhole_hit = np.zeros(self.width * self.height * 1)
+        self.ray_blackhole_hit.shape = self.height, self.width
+
+        #camera_locations = []
+        #ray_directions = []
+
+        self.results = []
+        start = time.time()
         for s in range(self.samples):
             for y in range(self.height):
+                if y%verbose_lvl == 0 and verbose:
+                    print(" Status, starting y: ", y, ", elap time: ", round(time.time()-start, 5))
                 y_render = self.field_of_view_y * (y-int(self.height/2))/self.height * self.aspectratio 
                 for x  in range(self.width):
-                    camera_locations.append(self.camera_location)
+                    #camera_locations.append(self.camera_location)
 
                     x_render = self.field_of_view_x * (x-int(self.width/2))/self.width
 
@@ -72,42 +90,73 @@ class RelativisticCamera:
                     # Normalize the direction ray
                     ray_direction = ray_direction / np.linalg.norm(ray_direction)
 
-                    ray_directions.append(ray_direction)
+                    #ray_directions.append(ray_direction)
+
+                    k_xyz, x_xyz, res = self.gi.calc_trajectory( k0_xyz = ray_direction, \
+                                                x0_xyz = self.camera_location,\
+                                                R_end = -1,\
+                                                curve_start = 0, \
+                                                curve_end = 50, \
+                                                nr_points_curve = 50, \
+                                                method = "RK45",\
+                                                max_step = np.inf,\
+                                                first_step = None,\
+                                                rtol = 1e-3,\
+                                                atol = 1e-6,\
+                                                verbose = self.verbose \
+                                                )
+                    #print(list(zip(*x_xyz))[0], list(zip(*k_xyz))[0])
+                    #print(x_xyz.shape, x_xyz[-1].shape)
+
+                    self.ray_end[y, x, 0:3] = list(zip(*x_xyz))[-1]# x_xyz[-1]#, *k_xyz[-1]]
+                    self.ray_end[y, x, 3:6] = list(zip(*k_xyz))[-1]
+
+                    self.ray_blackhole_hit[y, x] = int(res.hit_blackhole)
+
+                    self.results.append([k_xyz, x_xyz, res])
+
+        #, self.ray_end, self.ray_blackhole_hit
 
 
-        self.results = self.gi.calc_trajectory( k0_xyz = ray_directions, \
-                                                        x0_xyz = camera_locations,\
-                                                        R_end = -1,\
-                                                        curve_start = 0, \
-                                                        curve_end = 50, \
-                                                        nr_points_curve = 50, \
-                                                        method = "RK45",\
-                                                        max_step = np.inf,\
-                                                        first_step = None,\
-                                                        rtol = 1e-3,\
-                                                        atol = 1e-6,\
-                                                        verbose = self.verbose \
-                                                        )
+
+
+
+        # self.results = self.gi.calc_trajectory( k0_xyz = ray_directions, \
+        #                                                 x0_xyz = camera_locations,\
+        #                                                 R_end = -1,\
+        #                                                 curve_start = 0, \
+        #                                                 curve_end = 50, \
+        #                                                 nr_points_curve = 50, \
+        #                                                 method = "RK45",\
+        #                                                 max_step = np.inf,\
+        #                                                 first_step = None,\
+        #                                                 rtol = 1e-3,\
+        #                                                 atol = 1e-6,\
+        #                                                 verbose = self.verbose \
+        #                                                 )
 
 
         #if result['start_inside_hole'] == False:
         #    print()
 
-        return self.results
+        #return self.results
 
 
 
     def save(self, fname, directory):
         if os.path.isdir(directory):
             with open(os.path.join(directory, fname+'.pkl'), 'wb') as f:
-                pickle.dump(self.results, f)
+                pickle.dump({"results": self.results, "ray_end": self.ray_end, "ray_blackhole_hit": self.ray_blackhole_hit}, f)
         else:
             print("dir not found")
 
     def load(self, filepath):
         if os.path.isfile(filepath):
             with open(filepath, 'rb') as f:
-                self.results = pickle.load(f)
+                filecontent = pickle.load(f)
+                self.results = filecontent["results"]
+                self.ray_end = filecontent["ray_end"]
+                self.ray_blackhole_hit = filecontent["ray_blackhole_hit"]
 
 # Or do the follwoing:
 # np.array(cameuler.to_matrix())

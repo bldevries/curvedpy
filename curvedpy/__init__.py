@@ -11,4 +11,3 @@ from .geodesic_integrator_schwarzschild import GeodesicIntegratorSchwarzschild
 from .geodesic_integrator_kerr import GeodesicIntegratorKerr
 from .camera import RelativisticCamera
 
-

@@ -9,7 +9,9 @@ class GeodesicIntegratorKerr:
 
     conversions = Conversions()
 
-    def __init__(self, mass=1.0, a = 0.0, time_like = False, verbose=False, calc_kt_per_ray=True):
+    def __init__(self, mass=1.0, a = 0.0, time_like = False, verbose=False, verbose_init = False, calc_kt_per_ray=True, simplify_inv=True):
+        if verbose_init: print("Integrator - started init")
+
         self.calc_kt_per_ray = calc_kt_per_ray
 
         # Connection Symbols
@@ -54,77 +56,82 @@ class GeodesicIntegratorKerr:
             [g03, 0, 0, g33]\
             ])
 
-        # Getting the metric in full and only dependend on the coordinates
-        self.g = self.g_simple.subs(self.Del, self.Del_sub)
-        self.g = self.g.subs(self.Sig, self.Sig_sub)
-
-        # Keeping things simple we alread sub a before any differentiation
-        self.g = self.g.subs(self.a, self.a_value)
-        self.g = self.g.subs(self.r_s, self.r_s_value)
-
         # For the Christoffel symbols we need the inverse of the metric
         # For the Kerr metric, which is not diagonal, we need to do this
         # properly
-        self.g_inv = self.g.inv()
-        self.g_inv.simplify()
-
-        # We already differentiate the metric to all the coordinates, otherwise we
-        # will do this multiple time for the same elements when we calculating the 
-        # Christoffel symbols
-        if verbose: print("Calculating g_diff")
-        self.g_diff = [self.g.diff(self.t), self.g.diff(self.r), self.g.diff(self.th), self.g.diff(self.ph)]
-        if verbose: print(" Done")
-
-        # Time to start calculating the Christoffel Symbols
-        if verbose: print("Starting connection symbols")
-        self.gam_t = sp.Matrix([[gamma_func(0,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        if verbose: print("  Done gam_t")
-        self.gam_r = sp.Matrix([[gamma_func(1,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        if verbose: print("  Done gam_r")
-        self.gam_th = sp.Matrix([[gamma_func(2,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        if verbose: print("  Done gam_th")
-        self.gam_ph = sp.Matrix([[gamma_func(3,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        if verbose: print("  Done gam_ph")
-        if verbose: print(" Done connection symbols")
+        if verbose_init: start = time.time()
+        self.g_simple_inv = self.g_simple.inv()
+        if simplify_inv: self.g_simple_inv.simplify()
+        if verbose_init: print("Integrator - done inverse g in (sec): ", round(time.time()-start, 5))
 
         # Defining the four momentum per mass to use in the Geodesic Equation
         # Derivatives: k_beta = d x^beta / d lambda
         self.k_t, self.k_r, self.k_th, self.k_ph = sp.symbols('k_t k_r k_th k_ph', real=True)
         self.k = sp.Matrix([self.k_t, self.k_r, self.k_th, self.k_ph])
         # Also calculate the 1 form of the momentum per mass 4 vector
-        self.k__ = self.g*self.k
-        self.lamb_k__ = sp.lambdify([self.k_t, self.k_r, self.k_th, self.k_ph, self.t, self.r, self.th, self.ph],\
+        self.k__ = self.g_simple*self.k
+        self.k__ = self.k__.subs([(self.Del, self.Del_sub), (self.Sig, self.Sig_sub)])
+        self.lamb_k__ = sp.lambdify([self.k_t, self.k_r, self.k_th, self.k_ph, self.t, self.r, self.th, self.ph, self.r_s, self.a],\
                                  self.k__, "numpy")
-
-        #self.k = [self.k_t, self.k_r, self.k_th, self.k_ph]
-        
-        # Calculating the directional derivative of the four momentum per mass, also to use in the Geodesic equation
-        # Second derivatives: d k_beta = d^2 x^beta / d lambda^2
-        self.dk_t = sum([- self.gam_t[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
-        self.dk_r = sum([- self.gam_r[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
-        self.dk_th = sum([- self.gam_th[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
-        self.dk_ph = sum([- self.gam_ph[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
-        if verbose: print("Done diff of k")
 
         # Norm of k
         # the norm of k determines if you have a massive particle (-1), a mass-less photon (0) 
         # or a space-like curve (1)
-        self.norm_k = (self.k.T*self.g*self.k)[0]
-        self.norm_k_lamb = sp.lambdify([self.k_t, self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
-                                               self.r_s, self.a], self.norm_k, "numpy")
-        if verbose: print("Done k")
+        self.norm_k = (self.k.T*self.g_simple*self.k)[0]
 
         # Now we calculate k_t using the norm. This eliminates one of the differential equations.
         # time_like = True: calculates a geodesic for a massive particle
         # time_like = False: calculates a geodesic for a photon
+        if verbose_init: start = time.time()
         if not self.calc_kt_per_ray:
             if (self.time_like):
                 self.k_t_from_norm = sp.solve(self.norm_k+1, self.k_t)[1]
             else:
                 self.k_t_from_norm = sp.solve(self.norm_k, self.k_t)[1]
-            if verbose: print("Done norm of k")
+        if verbose_init: print("Integrator - Done norm of k in:", round(time.time()-start, 5))
+        
+
+        # Getting the metric in full and only dependend on the coordinates
+        self.g = self.g_simple.subs([(self.Del, self.Del_sub), (self.Sig, self.Sig_sub)])
+        #self.g = self.g.subs(self.Sig, self.Sig_sub)
+        self.g_inv = self.g_simple_inv.subs([(self.Del, self.Del_sub), (self.Sig, self.Sig_sub)])
+        self.norm_k = self.norm_k.subs([(self.Del, self.Del_sub), (self.Sig, self.Sig_sub)])
+
+
+        # We already differentiate the metric to all the coordinates, otherwise we
+        # will do this multiple time for the same elements when we calculating the 
+        # Christoffel symbols
+        if verbose_init: start = time.time()
+        self.g_diff = [self.g.diff(self.t), self.g.diff(self.r), self.g.diff(self.th), self.g.diff(self.ph)]
+        if verbose_init: print("Integrator - done with g_diff in: ", round(time.time()-start, 5))
+
+
+        # Time to start calculating the Christoffel Symbols
+        if verbose_init: start = time.time()
+        self.gam_t = sp.Matrix([[gamma_func(0,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        self.gam_r = sp.Matrix([[gamma_func(1,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        self.gam_th = sp.Matrix([[gamma_func(2,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        self.gam_ph = sp.Matrix([[gamma_func(3,mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        if verbose_init: print("Integrator - done connection symbols in: ", round(time.time()-start, 5))
+
+        #self.k = [self.k_t, self.k_r, self.k_th, self.k_ph]
+        
+        # Subbing        
+        # self.g = self.g.subs(self.a, self.a_value)
+        # self.g = self.g.subs(self.r_s, self.r_s_value)
+
+        # Calculating the directional derivative of the four momentum per mass, also to use in the Geodesic equation
+        # Second derivatives: d k_beta = d^2 x^beta / d lambda^2
+        if verbose_init: start = time.time()
+        self.dk_t = sum([- self.gam_t[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
+        self.dk_r = sum([- self.gam_r[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
+        self.dk_th = sum([- self.gam_th[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
+        self.dk_ph = sum([- self.gam_ph[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
+        if verbose_init: print("Integrator - Done diff of k in: ", round(time.time()-start, 5))
+
 
         # Lambdify versions of the directional derivatives of the four momentum per mass
+        if verbose_init: start = time.time()
         self.dk_t_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
                                       self.k_t, self.t, self.r_s, self.a], \
                                      self.dk_t, "numpy")
@@ -137,11 +144,19 @@ class GeodesicIntegratorKerr:
         self.dk_ph_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
                                       self.k_t, self.t, self.r_s, self.a], \
                                      self.dk_ph, "numpy")
+
+        self.norm_k_lamb = sp.lambdify([self.k_t, self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
+                                               self.r_s, self.a], self.norm_k, "numpy")
+
         if not self.calc_kt_per_ray:
+            self.k_t_from_norm = self.k_t_from_norm.subs([(self.Del, self.Del_sub), (self.Sig, self.Sig_sub)])
             self.k_t_from_norm_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
                                                    self.r_s, self.a], self.k_t_from_norm, "numpy")
-        if verbose: print("Done lambdifying")
 
+        if verbose_init: 
+            print("Inegrator - Done lambdifying in:", round(time.time()-start, 5))
+            print("Integrator - init done")
+            print()
 
 
 
@@ -210,13 +225,13 @@ class GeodesicIntegratorKerr:
                         verbose = False \
                        ):
 
+        if verbose: print("Calculate Traj Started")
         if not isinstance(x0_xyz,np.ndarray):
             x0_xyz = np.array(x0_xyz)
 
         if not isinstance(k0_xyz,np.ndarray):
             k0_xyz = np.array(k0_xyz)
 
-        if verbose: print("Converting from xyz to bl")
         x0_bl, k0_bl = self.conversions.convert_xyz_to_bl(x0_xyz, k0_xyz, a = self.a_value)
         k_r_0, k_th_0, k_ph_0 = k0_bl
         r0, th0, ph0 = x0_bl
@@ -234,8 +249,10 @@ class GeodesicIntegratorKerr:
         k_bl = np.array([k_r, k_th, k_ph])
         x_bl = np.array([r, th, ph])
 
+        if verbose: start = time.time()
         # SHOULD I NOT CHANGE COORDS USING 4 VECTORS????
         x_xyz, k_xyz = self.conversions.convert_bl_to_xyz(x_bl, k_bl, self.a_value)
+        if verbose: print("  Converting result to xyz in: ", round(time.time()-start, 5))
 
         x4_xyz = np.array([t, *x_xyz])
         k4_xyz = np.array([k_t, *k_xyz])
@@ -261,15 +278,14 @@ class GeodesicIntegratorKerr:
                         atol = 1e-6,\
                         verbose = False \
                        ):
-        if verbose: print("Starting trajectory in BL coords")
 
         # Calculate from norm of starting condition
-        if verbose: print("  Getting kt")
+        if verbose: start = time.time()
         if self.calc_kt_per_ray:
             k_t_0 = self.get_k_t_from_norm(k_r_0, r0, k_th_0, th0, k_ph_0, ph0)
         else:
-            # NOt implemented yet!!
-            k_t_0 = self.k_t_from_norm_lamb(k_r_0, r0, k_th_0, th0, k_ph_0, ph0, self.r_s_value)
+            k_t_0 = self.k_t_from_norm_lamb(k_r_0, r0, k_th_0, th0, k_ph_0, ph0, self.r_s_value, self.a_value)
+        if verbose: print("  Calculated k_t in: ", round(time.time()-start, 5))
 
         if R_end == -1:
             R_end = np.inf
@@ -280,10 +296,10 @@ class GeodesicIntegratorKerr:
             # Step function needed for solve_ivp
             def step(lamb, new):
 
-                if verbose:
-                    k_r, r, k_th, th, k_ph, ph, k_t = new
-                    x, y, z = self.conversions.coord_conversion_bl_xyz(r, th, ph, self.a_value)
-                    print(round(x, 4), round(y,4), round(z,4))
+                # if verbose:
+                #     k_r, r, k_th, th, k_ph, ph, k_t = new
+                #     x, y, z = self.conversions.coord_conversion_bl_xyz(r, th, ph, self.a_value)
+                #     print(round(x, 4), round(y,4), round(z,4))
 
                 new_k_r, new_r, new_k_th, new_th, new_k_ph, new_ph, new_k_t = new
 
@@ -316,11 +332,10 @@ class GeodesicIntegratorKerr:
             else:
                 t_pts = np.linspace(curve_start, curve_end, nr_points_curve)
 
-            start = time.time()
             events = [hit_blackhole]
             events.append(reached_end)
 
-            if verbose: print("Starting solver")
+            start = time.time()
             result = solve_ivp(step, (curve_start, curve_end), values_0, t_eval=t_pts, \
                                events=events,\
                                method=method,\
@@ -328,8 +343,10 @@ class GeodesicIntegratorKerr:
                                first_step = first_step,\
                                atol=atol,\
                                rtol = rtol)
-            end = time.time()
-            if verbose: print("New: ", result.message, end-start, "sec")
+            if verbose: 
+                print("  Finished solver: ", result.message)
+                print("   Blackhole hit? ", len(result.t_events[0])>0)
+                print("   Time: ",round(time.time()-start, 5), "sec")
 
             result.update({"R_end": R_end})
             result.update({"hit_blackhole": len(result.t_events[0])>0})
