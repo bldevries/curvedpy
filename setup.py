@@ -17,7 +17,7 @@ setup(
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         packages=find_packages(),
-        install_requires=["numpy", "scipy", "sympy"], # add any additional packages that 
+        install_requires=["numpy", "scipy", "sympy", "multiprocess", "functools"], # add any additional packages that 
         license = " GPL-3.0",
         # needs to be installed along with your package. Eg: 'caer'
         url= "https://github.com/bldevries/curvedpy",

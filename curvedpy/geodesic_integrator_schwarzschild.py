@@ -33,6 +33,14 @@ class GeodesicIntegratorSchwarzschild:
         # Type of geodesic
         self.time_like = time_like # No Massive particle geodesics yet
 
+        if verbose:
+            print("Geodesic SS Integrator Settings: ")
+            print(f"  - {self.M=}")
+            print(f"  - {self.r_s_value=}")
+            print(f"  - {self.time_like=}")
+            print(f"  - {self.verbose=}")
+            print("--")
+
         # Define symbolic variables
         self.t, self.r, self.th, self.ph, self.r_s = sp.symbols("t r \\theta \\phi r_s")
 

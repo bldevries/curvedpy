@@ -9,7 +9,13 @@ class GeodesicIntegratorKerr:
 
     conversions = Conversions()
 
-    def __init__(self, mass=1.0, a = 0.0, time_like = False, verbose=False, verbose_init = False, calc_kt_per_ray=True, simplify_inv=True):
+    def __init__(self, \
+            mass=1.0, a = 0.0, time_like = False, \
+            pre_sub_metric_params = False, \
+            calc_kt_per_ray=True, \
+            simplify_inv=True, \
+            verbose=False, verbose_init = False ):
+
         if verbose_init: print("Integrator - started init")
 
         self.calc_kt_per_ray = calc_kt_per_ray
@@ -34,6 +40,21 @@ class GeodesicIntegratorKerr:
 
         # Type of geodesic
         self.time_like = time_like
+
+        self.verbose = verbose 
+
+
+        if verbose_init:
+            print("Geodesic Kerr Integrator Settings: ")
+            print(f"  - {self.M=}")
+            print(f"  - {self.a_value=}")
+            print(f"  - {self.r_s_value=}")
+            print(f"  - {self.time_like=}")
+            print(f"  - {self.verbose=} does not work from init yet")
+            print(f"  - {pre_sub_metric_params=}")
+            print(f"  - {self.calc_kt_per_ray=}")
+            print(f"  - {simplify_inv=}")
+            print("--")
 
         # Define symbolic variables
         self.t, self.r, self.th, self.ph, self.r_s, self.a = sp.symbols("t r \\theta \\phi r_s a")
@@ -71,8 +92,6 @@ class GeodesicIntegratorKerr:
         # Also calculate the 1 form of the momentum per mass 4 vector
         self.k__ = self.g_simple*self.k
         self.k__ = self.k__.subs([(self.Del, self.Del_sub), (self.Sig, self.Sig_sub)])
-        self.lamb_k__ = sp.lambdify([self.k_t, self.k_r, self.k_th, self.k_ph, self.t, self.r, self.th, self.ph, self.r_s, self.a],\
-                                 self.k__, "numpy")
 
         # Norm of k
         # the norm of k determines if you have a massive particle (-1), a mass-less photon (0) 
@@ -96,7 +115,11 @@ class GeodesicIntegratorKerr:
         #self.g = self.g.subs(self.Sig, self.Sig_sub)
         self.g_inv = self.g_simple_inv.subs([(self.Del, self.Del_sub), (self.Sig, self.Sig_sub)])
         self.norm_k = self.norm_k.subs([(self.Del, self.Del_sub), (self.Sig, self.Sig_sub)])
-
+        
+        if pre_sub_metric_params:
+            # Subbing these in can make things a lot faster in some cases.
+            self.g = self.g.subs([(self.a, self.a_value), (self.r_s, self.r_s_value)])
+            self.g_inv = self.g_inv.subs([(self.a, self.a_value), (self.r_s, self.r_s_value)])
 
         # We already differentiate the metric to all the coordinates, otherwise we
         # will do this multiple time for the same elements when we calculating the 
@@ -116,9 +139,6 @@ class GeodesicIntegratorKerr:
 
         #self.k = [self.k_t, self.k_r, self.k_th, self.k_ph]
         
-        # Subbing        
-        # self.g = self.g.subs(self.a, self.a_value)
-        # self.g = self.g.subs(self.r_s, self.r_s_value)
 
         # Calculating the directional derivative of the four momentum per mass, also to use in the Geodesic equation
         # Second derivatives: d k_beta = d^2 x^beta / d lambda^2
@@ -152,6 +172,9 @@ class GeodesicIntegratorKerr:
             self.k_t_from_norm = self.k_t_from_norm.subs([(self.Del, self.Del_sub), (self.Sig, self.Sig_sub)])
             self.k_t_from_norm_lamb = sp.lambdify([self.k_r, self.r, self.k_th, self.th, self.k_ph, self.ph, \
                                                    self.r_s, self.a], self.k_t_from_norm, "numpy")
+
+        self.lamb_k__ = sp.lambdify([self.k_t, self.k_r, self.k_th, self.k_ph, self.t, self.r, self.th, self.ph, self.r_s, self.a],\
+                                 self.k__, "numpy")
 
         if verbose_init: 
             print("Inegrator - Done lambdifying in:", round(time.time()-start, 5))
@@ -226,6 +249,7 @@ class GeodesicIntegratorKerr:
                        ):
 
         if verbose: print("Calculate Traj Started")
+        if verbose: print(f"{max_step=}")
         if not isinstance(x0_xyz,np.ndarray):
             x0_xyz = np.array(x0_xyz)
 
