@@ -3,6 +3,10 @@ import curvedpy as cp
 import sympy as sp
 import numpy as np
 import random
+from curvedpy.utils.conversions import Conversions
+from curvedpy.geodesics.kerr import GeodesicIntegratorKerr
+
+
 
 # python -m unittest discover -v test
 # python test/test_kerr_geodesic_integration.py TestCurvedpyKERR_conservation.test_check_conserved_quantities_photons
@@ -10,11 +14,11 @@ import random
 class TestCurvedpyKerr(unittest.TestCase):
 
     def setUp(self):
-        self.converter = cp.Conversions()
+        self.converter = Conversions()
         self.a = 0.5
         self.m = 0.5
-        self.gi = cp.GeodesicIntegratorKerr(mass= self.m, a = self.a)#metric='schwarzschild', mass=1.0)
-        self.gi_rev = cp.GeodesicIntegratorKerr(mass= self.m, a = -self.a)#metric='schwarzschild', mass=1.0)
+        self.gi = GeodesicIntegratorKerr(mass= self.m, a = self.a)#metric='schwarzschild', mass=1.0)
+        self.gi_rev = GeodesicIntegratorKerr(mass= self.m, a = -self.a)#metric='schwarzschild', mass=1.0)
 
 
         self.start_t, self.end_t, self.steps = 0, 60, 60
@@ -86,11 +90,11 @@ class TestCurvedpyKerr(unittest.TestCase):
 ################################################################################################
 class TestCurvedpyKERR_conservation(unittest.TestCase):
     def setUp(self):
-        self.converter = cp.Conversions()
+        self.converter = Conversions()
         self.a = 0.5
         self.m = 0.5
-        self.gi = cp.GeodesicIntegratorKerr(mass= self.m, a = self.a)
-        self.gi_mass = cp.GeodesicIntegratorKerr(mass= self.m, a = self.a, time_like = True)
+        self.gi = GeodesicIntegratorKerr(mass= self.m, a = self.a)
+        self.gi_mass = GeodesicIntegratorKerr(mass= self.m, a = self.a, time_like = True)
 
         self.start_t, self.end_t, self.steps = 0, 60, 60
         self.max_step = 0.1

@@ -3,13 +3,14 @@ import curvedpy as cp
 import sympy as sp
 import numpy as np
 import random
+from curvedpy.utils.conversions import Conversions
 
 ################################################################################################
 #
 ################################################################################################
 class TestConversions(unittest.TestCase):
     def setUp(self):
-        self.converter = cp.Conversions()
+        self.converter = Conversions()
 
     # A single test to see if the spherical and cartesian conversion works
     def test_CONV_sph_to_xyz_and_back(self):

@@ -3,6 +3,8 @@ import curvedpy as cp
 import sympy as sp
 import numpy as np
 import random
+from curvedpy.utils.conversions import Conversions
+from curvedpy.geodesics.schwarzschild import GeodesicIntegratorSchwarzschildXYZ
 
 # python -m unittest discover -v test
 
@@ -11,7 +13,7 @@ import random
 ################################################################################################
 class TestConversions(unittest.TestCase):
     def setUp(self):
-        self.converter = cp.Conversions()
+        self.converter = Conversions()
 
     def test_SCHW_sph_to_xyz_and_back(self):
         k0_xyz = np.array([11.322145, 15.136237, 65.246265])
@@ -38,7 +40,8 @@ class TestConversions(unittest.TestCase):
 class TestCurvedpySchwarzschild(unittest.TestCase):
 
     def setUp(self):
-        self.gi = cp.GeodesicIntegratorSchwarzschild()#metric='schwarzschild', mass=1.0)
+        self.gi = GeodesicIntegratorSchwarzschildXYZ()
+        #self.gi = cp.GeodesicIntegratorSchwarzschild()#metric='schwarzschild', mass=1.0)
         self.start_t, self.end_t, self.steps = 0, 60, 60
         self.max_step = 1
         self.round_level = 4
@@ -107,7 +110,7 @@ class TestCurvedpySchwarzschild(unittest.TestCase):
 ################################################################################################
 class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
     def setUp(self):
-        self.converter = cp.Conversions()
+        self.converter = Conversions()
 
         self.mass = 1.0
         self.start_t, self.end_t, self.steps = 0, 60, 60
@@ -115,12 +118,13 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         self.round_level = 10
 
     def test_SCHW_check_conserved_quantities_photons(self):
-        self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = False)#metric='schwarzschild', mass=1.0)
+        self.gi = GeodesicIntegratorSchwarzschildXYZ(mass = self.mass, time_like = False)
+        #self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = False)#metric='schwarzschild', mass=1.0)
 
         k0_sph = np.array([0.0, 0., -0.1]) 
         x0_sph = np.array([3, 1/2*np.pi, 1/4*np.pi])
         x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph)
-        k, x, res =  self.gi.calc_trajectory(k0_xyz, x0_xyz, verbose=False, max_step=0.01)#curve_end = 100, nr_points_curve = 1000, 
+        k, x, res =  self.gi.calc_trajectory(k0_xyz, x0_xyz, verbose=False, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
         k_r, r, k_th, th, k_ph, ph, k_t = res.y
 
         L = self.gi.ang_mom(r, k_ph)
@@ -132,12 +136,14 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         self.assertTrue( round(np.std(E),self.round_level) == 0.0 )
 
     def test_SCHW_check_conserved_quantities_massive_particles(self):
-        self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = True)#metric='schwarzschild', mass=1.0)
+        self.gi = GeodesicIntegratorSchwarzschildXYZ(mass = self.mass, time_like = True)
+        #self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = True)#metric='schwarzschild', mass=1.0)
 
         k0_sph = np.array([0., 0., -0.1])
         x0_sph = np.array([20, 1/2*np.pi,0])
         x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph)
-        k, x, res =  self.gi.calc_trajectory(k0_xyz, x0_xyz, verbose=False, max_step=0.01)#curve_end = 100, nr_points_curve = 1000, 
+
+        k, x, res =  self.gi.calc_trajectory(k0_xyz, x0_xyz, verbose=False, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
         k_r, r, k_th, th, k_ph, ph, k_t = res.y
 
         L = self.gi.ang_mom(r, k_ph)

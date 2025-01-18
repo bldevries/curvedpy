@@ -3,7 +3,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import time
 #import multiprocessing as mp
-from curvedpy import Conversions
+from curvedpy.utils.conversions import Conversions
 
 # -------------------------------
 # ----NAMING CONVENTIONS USED----
@@ -31,14 +31,14 @@ from curvedpy import Conversions
 
 # https://f.yukterez.net/einstein.equations/files/8.html#transformation
 # https://physics.stackexchange.com/questions/672252/how-to-compute-and-interpret-schwartzchild-black-hole-metric-line-element-ds-i
-class GeodesicIntegratorSchwarzschildXYZ_v2:
+class GeodesicIntegratorSchwarzschildXYZ:
 
     conversions = Conversions()
 
     ################################################################################################
     #
     ################################################################################################
-    def __init__(self, mass=1.0, flip_sign_convention=-1, time_like = False, verbose=False):
+    def __init__(self, mass=1.0, time_like = False, verbose=False):
 
 
 
@@ -66,7 +66,7 @@ class GeodesicIntegratorSchwarzschildXYZ_v2:
         self.r_sub = (self.x**2 + self.y**2 + self.z**2)**sp.Rational(1,2)
         self.alp_sub = self.r_s/(self.r**2*(-self.r_s+self.r)) # NOTE THE r_s is in here for most entries!
 
-        #flip_sign_convention = -1
+        flip_sign_convention = -1
 
         g00 = -1*( 1-self.r_s/self.r )
         g01, g02, g03 = 0,0,0
@@ -108,12 +108,10 @@ class GeodesicIntegratorSchwarzschildXYZ_v2:
         self.g_mu_nu_cart = sp.Matrix([[g_00,g_01,g_02,g_03], [g_10,g_11,g_12,g_13], [g_20,g_21,g_22,g_23], [g_30,g_31,g_32,g_33]]).subs(self.r, self.r_sub)
         self.g_mu_nu_cart = self.g_mu_nu_cart.subs(self.alp, self.alp_sub).subs(self.r, self.r_sub)
 
-        print("g_diff")
         self.g__mu__nu_cart_diff = [self.g__mu__nu_cart.diff(self.t), self.g__mu__nu_cart.diff(self.x), \
                                      self.g__mu__nu_cart.diff(self.y), self.g__mu__nu_cart.diff(self.z)]
 
         # We lambdify these to get numpy arrays
-        print("g_lamb")
         self.g__mu__nu_cart_lamb = sp.lambdify([self.t, self.x, self.y, self.z, self.r_s], self.g__mu__nu_cart)
         self.g_mu_nu_cart_lamb = sp.lambdify([self.t, self.x, self.y, self.z, self.r_s], self.g_mu_nu_cart)
         self.g__mu__nu_cart_diff_lamb = sp.lambdify([self.t, self.x, self.y, self.z, self.r_s], self.g__mu__nu_cart_diff)
@@ -121,7 +119,6 @@ class GeodesicIntegratorSchwarzschildXYZ_v2:
         # Norm of k
         # the norm of k determines if you have a massive particle (-1), a mass-less photon (0) 
         # or a space-like curve (1)
-        print("k_norm")
         self.k_t, self.k_x, self.k_y, self.k_z = sp.symbols('k_t k_x k_y k_z', real=True)
         self.k_mu_cart = sp.Matrix([self.k_t, self.k_x, self.k_y, self.k_z])
         self.norm_k = (self.k_mu_cart.T*self.g__mu__nu_cart*self.k_mu_cart)[0]

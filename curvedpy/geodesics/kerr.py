@@ -3,7 +3,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import time
 #import multiprocessing as mp
-from curvedpy import Conversions
+from curvedpy.utils.conversions import Conversions
 
 class GeodesicIntegratorKerr:
 
