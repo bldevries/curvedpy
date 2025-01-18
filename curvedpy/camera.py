@@ -1,6 +1,8 @@
 import numpy as np
 #from curvedpy import Conversions
 from curvedpy import GeodesicIntegratorKerr, GeodesicIntegratorSchwarzschild
+from curvedpy.geodesic_integrator_schwarzschild_XYZ import GeodesicIntegratorSchwarzschildXYZ
+from curvedpy.geodesic_integrator_schwarzschild_XYZ_v2 import GeodesicIntegratorSchwarzschildXYZ_v2
 from curvedpy.utils import getImpactParam
 import random
 import os
@@ -25,18 +27,20 @@ class RelativisticCamera:
                         camera_rotation_euler_props=['x', 0], \
                         resolution = [64, 64],\
                         field_of_view = [0.3, 0.3],\
+                        integrator = "ss-xyz",\
                         R_schwarzschild=1.0, \
                         a = 0.0,\
                         samples = 1,\
                         sampling_seed = 43,\
                         y_lim = [], x_lim = [],\
                         max_step = np.inf,\
-                        force_schwarzschild_integrator = False,\
+                        #force_schwarzschild_integrator = False,\
                         simplify_inv = True,\
                         verbose=False,\
                         verbose_init = False):
 
         self.verbose = verbose
+        self.integrator = integrator
 
         self.M = 1/2*R_schwarzschild
         self.a = a
@@ -65,17 +69,23 @@ class RelativisticCamera:
 
         self.max_step = max_step
         
-        self.schwarzschild_integrator = force_schwarzschild_integrator
+        #self.schwarzschild_integrator = force_schwarzschild_integrator
 
-        if a == 0 and self.schwarzschild_integrator:
-            self.gi = GeodesicIntegratorSchwarzschild(verbose=self.verbose, mass = self.M)
-        else:
-            self.gi = GeodesicIntegratorKerr(simplify_inv = simplify_inv, verbose=self.verbose, verbose_init = verbose_init, mass = self.M, a = self.a)
+        if self.integrator == "ss-sph":
+            self.gi = GeodesicIntegratorKerr(verbose=self.verbose, mass = self.M, a = 0.0)
+        elif self.integrator == "ss-xyz":
+            self.gi = GeodesicIntegratorSchwarzschildXYZ(mass=self.M, verbose = self.verbose)
+        elif self.integrator == "ss_xyz_hardcoded":
+            self.gi = GeodesicIntegratorSchwarzschildXYZ_v2(mass=self.M, verbose = self.verbose)
+        elif self.integrator == "kerr-sph":
+            self.gi = GeodesicIntegratorKerr(simplify_inv = simplify_inv, verbose=self.verbose, verbose_init = verbose_init, mass = self.M, a = self.a)            
+
 
         self.results = None
 
         if verbose_init:
             print("Camera Settings: ")
+            print(f"  - {self.integrator=}")
             print(f"  - {self.M=}")
             print(f"  - {self.a=}")
             print(f"  - {R_schwarzschild=}")
@@ -90,14 +100,14 @@ class RelativisticCamera:
             print(f"  - {self.y_lim=}")
             print(f"  - {self.x_lim=}")
             print(f"  - {self.max_step=}")
-            print(f"  - {force_schwarzschild_integrator=}")
+            #print(f"  - {force_schwarzschild_integrator=}")
             print(f"  - {simplify_inv=}")
             print("--")
 
 
 
     def filename_suggestion(self):
-        fn = "res_"+str(self.height)+"x"+str(self.width)+\
+        fn = "integrator_"+str(self.integrator)+"_res_"+str(self.height)+"x"+str(self.width)+\
                 "_fov-x_"+str(self.field_of_view_x)+"_fov-y_"+str(self.field_of_view_y)+\
                 "_a_"+str(self.a)+"_M_"+str(self.M)+\
                 "_xyz0_"+str(self.camera_location[0])+"_"+str(self.camera_location[1])+"_"+str(self.camera_location[2])+\
@@ -105,8 +115,8 @@ class RelativisticCamera:
                 "_max_step_"+str(self.max_step)
                 #"_rot_"+rot_axis+"_angle_"+str(degrees)
 
-        if self.schwarzschild_integrator:
-            fn += "_forceSS_"+str(self.schwarzschild_integrator)
+        # if self.schwarzschild_integrator:
+        #     fn += "_forceSS_"+str(self.schwarzschild_integrator)
         return fn
 
     def get_x_render(self, x):

@@ -57,7 +57,7 @@ class GeodesicIntegratorKerr:
             print("--")
 
         # Define symbolic variables
-        self.t, self.r, self.th, self.ph, self.r_s, self.a = sp.symbols("t r \\theta \\phi r_s a")
+        self.t, self.r, self.th, self.ph, self.r_s, self.a = sp.symbols("t r \\theta \\phi r_s a", positive=True, real=True)
         self.Sig, self.Del = sp.symbols("\\Sigma \\Delta")
         self.Sig_sub = self.r**2 + self.a**2 * sp.cos(self.th)**2
         self.Del_sub = self.r**2 - self.r_s*self.r + self.a**2
