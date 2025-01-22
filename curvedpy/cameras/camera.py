@@ -1,9 +1,11 @@
 import numpy as np
 #from curvedpy import Conversions
-from curvedpy import GeodesicIntegratorKerr, GeodesicIntegratorSchwarzschild
-from curvedpy.geodesic_integrator_schwarzschild_XYZ import GeodesicIntegratorSchwarzschildXYZ
-from curvedpy.geodesic_integrator_schwarzschild_XYZ_v2 import GeodesicIntegratorSchwarzschildXYZ_v2
-from curvedpy.utils import getImpactParam
+#from curvedpy.geodesics.kerr import GeodesicIntegratorKerr, 
+from curvedpy.geodesics.blackhole import BlackholeGeodesicIntegrator
+#from curvedpy.geodesics.schwarzschild import GeodesicIntegratorSchwarzschildXYZ
+#from curvedpy.geodesics.geodesic_integrator_schwarzschild_XYZ import GeodesicIntegratorSchwarzschildXYZ
+#from curvedpy.geodesics.geodesic_integrator_schwarzschild_XYZ_v2 import GeodesicIntegratorSchwarzschildXYZ_v2
+from curvedpy.utils.utils import getImpactParam
 import random
 import os
 import pickle 
@@ -71,14 +73,14 @@ class RelativisticCamera:
         
         #self.schwarzschild_integrator = force_schwarzschild_integrator
 
-        if self.integrator == "ss-sph":
-            self.gi = GeodesicIntegratorKerr(verbose=self.verbose, mass = self.M, a = 0.0)
-        elif self.integrator == "ss-xyz":
-            self.gi = GeodesicIntegratorSchwarzschildXYZ(mass=self.M, verbose = self.verbose)
-        elif self.integrator == "ss_xyz_hardcoded":
-            self.gi = GeodesicIntegratorSchwarzschildXYZ_v2(mass=self.M, verbose = self.verbose)
-        elif self.integrator == "kerr-sph":
-            self.gi = GeodesicIntegratorKerr(simplify_inv = simplify_inv, verbose=self.verbose, verbose_init = verbose_init, mass = self.M, a = self.a)            
+        # if self.integrator == "ss-sph":
+        #     self.gi = GeodesicIntegratorKerr(verbose=self.verbose, mass = self.M, a = 0.0)
+        # elif self.integrator == "ss-xyz":
+        self.gi = BlackholeGeodesicIntegrator(mass=self.M, a=self.a, verbose = self.verbose)
+        # elif self.integrator == "ss_xyz_hardcoded":
+        #     self.gi = GeodesicIntegratorSchwarzschildXYZ_v2(mass=self.M, verbose = self.verbose)
+        # elif self.integrator == "kerr-sph":
+        #     self.gi = GeodesicIntegratorKerr(simplify_inv = simplify_inv, verbose=self.verbose, verbose_init = verbose_init, mass = self.M, a = self.a)            
 
 
         self.results = None
@@ -202,7 +204,7 @@ class RelativisticCamera:
         start_values = list(zip(np.array_split(k0, cores), np.array_split(x0, cores)))
         
         def wrap_calc_trajectory(k0_xyz, x0_xyz, shared, mes="no mes"):
-            res = shared['gi'].calc_trajectory(k0_xyz = k0_xyz, x0_xyz = x0_xyz, max_step = self.max_step, verbose=False)
+            res = shared['gi'].geodesic(k0_xyz = k0_xyz, x0_xyz = x0_xyz, max_step = self.max_step, verbose=False)
             return res
 
         with Manager() as manager:
@@ -267,7 +269,7 @@ class RelativisticCamera:
 
                     #ray_directions.append(ray_direction)
 
-                    k_xyz, x_xyz, res = self.gi.calc_trajectory( k0_xyz = ray_direction, \
+                    k_xyz, x_xyz, res = self.gi.geodesic( k0_xyz = ray_direction, \
                                                 x0_xyz = self.camera_location,\
                                                 R_end = -1,\
                                                 curve_start = 0, \

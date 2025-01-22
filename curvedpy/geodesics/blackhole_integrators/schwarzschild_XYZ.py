@@ -200,6 +200,16 @@ class GeodesicIntegratorSchwarzschildXYZ:
         #                                         self.k_t_from_norm, "numpy")
 
 
+    def convert_to_oneform(self, k4_mu, x4_mu):
+        x__mu, k__mu = [], []
+        for i in range(len(k4_mu)):
+            g = self.g__mu__nu_cart_lamb(*x4_mu[i], self.r_s_value)
+            x__mu.append(g@x4_mu[i])
+            k__mu.append(g@k4_mu[i])
+        return k__mu, x__mu
+
+    def convert_to_sph(self, k4)....
+
     ################################################################################################
     #
     ################################################################################################

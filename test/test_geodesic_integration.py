@@ -4,10 +4,10 @@ import sympy as sp
 import numpy as np
 import random
 from curvedpy.utils.conversions import Conversions
-from curvedpy.geodesics.schwarzschild import GeodesicIntegratorSchwarzschildXYZ
+from curvedpy.geodesics.blackhole import BlackholeGeodesicIntegrator
 
 # python -m unittest discover -v test
-
+# python test/test_geodesic_integration.py -v
 ################################################################################################
 # Test to see if the spherical to cartesian conversion functions are consistent
 ################################################################################################
@@ -40,7 +40,7 @@ class TestConversions(unittest.TestCase):
 class TestCurvedpySchwarzschild(unittest.TestCase):
 
     def setUp(self):
-        self.gi = GeodesicIntegratorSchwarzschildXYZ()
+        self.gi = BlackholeGeodesicIntegrator()
         #self.gi = cp.GeodesicIntegratorSchwarzschild()#metric='schwarzschild', mass=1.0)
         self.start_t, self.end_t, self.steps = 0, 60, 60
         self.max_step = 1
@@ -53,7 +53,7 @@ class TestCurvedpySchwarzschild(unittest.TestCase):
         k0_xyz = np.array([1, 0.0, 0.0])
         x0_xyz = np.array([-10, 10, 0])
 
-        k_xyz, x_xyz, line = self.gi.calc_trajectory(k0_xyz, x0_xyz, \
+        k_xyz, x_xyz, line = self.gi.geodesic(k0_xyz, x0_xyz, \
                                   curve_start = self.start_t, \
                                   curve_end = self.end_t, \
                                   nr_points_curve = self.steps,\
@@ -71,7 +71,7 @@ class TestCurvedpySchwarzschild(unittest.TestCase):
 
 
         # Trajectory in backward direction
-        k_xyz2, x_xyz2, line_reverse = self.gi.calc_trajectory(k0_xyz2, x0_xyz2, \
+        k_xyz2, x_xyz2, line_reverse = self.gi.geodesic(k0_xyz2, x0_xyz2, \
                                   curve_start = self.start_t, \
                                   curve_end = self.end_t, \
                                   nr_points_curve = self.steps,\
@@ -118,13 +118,13 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         self.round_level = 10
 
     def test_SCHW_check_conserved_quantities_photons(self):
-        self.gi = GeodesicIntegratorSchwarzschildXYZ(mass = self.mass, time_like = False)
+        self.gi = BlackholeGeodesicIntegrator(mass = self.mass, time_like = False)
         #self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = False)#metric='schwarzschild', mass=1.0)
 
         k0_sph = np.array([0.0, 0., -0.1]) 
         x0_sph = np.array([3, 1/2*np.pi, 1/4*np.pi])
         x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph)
-        k, x, res =  self.gi.calc_trajectory(k0_xyz, x0_xyz, verbose=False, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
+        k, x, res =  self.gi.geodesic(k0_xyz, x0_xyz, verbose=False, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
         k_r, r, k_th, th, k_ph, ph, k_t = res.y
 
         L = self.gi.ang_mom(r, k_ph)
@@ -136,14 +136,14 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         self.assertTrue( round(np.std(E),self.round_level) == 0.0 )
 
     def test_SCHW_check_conserved_quantities_massive_particles(self):
-        self.gi = GeodesicIntegratorSchwarzschildXYZ(mass = self.mass, time_like = True)
+        self.gi = BlackholeGeodesicIntegrator(mass = self.mass, time_like = True)
         #self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = True)#metric='schwarzschild', mass=1.0)
 
         k0_sph = np.array([0., 0., -0.1])
         x0_sph = np.array([20, 1/2*np.pi,0])
         x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph)
 
-        k, x, res =  self.gi.calc_trajectory(k0_xyz, x0_xyz, verbose=False, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
+        k, x, res =  self.gi.geodesic(k0_xyz, x0_xyz, verbose=False, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
         k_r, r, k_th, th, k_ph, ph, k_t = res.y
 
         L = self.gi.ang_mom(r, k_ph)
