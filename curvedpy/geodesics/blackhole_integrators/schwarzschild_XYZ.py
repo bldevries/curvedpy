@@ -137,10 +137,10 @@ class GeodesicIntegratorSchwarzschildXYZ:
         g_diff = self.g__mu__nu_cart_diff_lamb(t_val, x_val, y_val, z_val, self.r_s_value)
 
         # Calc the connection Symbols at given coords
-        gam_t = sp.Matrix([[self.gamma_func(g, g_inv, g_diff, 0, mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        gam_x = sp.Matrix([[self.gamma_func(g, g_inv, g_diff, 1, mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        gam_y = sp.Matrix([[self.gamma_func(g, g_inv, g_diff, 2, mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        gam_z = sp.Matrix([[self.gamma_func(g, g_inv, g_diff, 3, mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        gam_t = np.array([[self.gamma_func(g, g_inv, g_diff, 0, mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        gam_x = np.array([[self.gamma_func(g, g_inv, g_diff, 1, mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        gam_y = np.array([[self.gamma_func(g, g_inv, g_diff, 2, mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        gam_z = np.array([[self.gamma_func(g, g_inv, g_diff, 3, mu, nu) for mu in [0,1,2,3]] for nu in [0,1,2,3]])
 
         # Building up the geodesic equation: 
         # Derivatives: k_beta = d x^beta / d lambda
@@ -149,10 +149,10 @@ class GeodesicIntegratorSchwarzschildXYZ:
         k = [kt_val, kx_val, ky_val, kz_val]
     
         # Second derivatives: d k_beta = d^2 x^beta / d lambda^2
-        dk_t = sum([- gam_t[nu, mu]*k[mu]*k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
-        dk_x = sum([- gam_x[nu, mu]*k[mu]*k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
-        dk_y = sum([- gam_y[nu, mu]*k[mu]*k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
-        dk_z = sum([- gam_z[nu, mu]*k[mu]*k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
+        dk_t = np.sum(np.array([- gam_t[nu, mu]*k[mu]*k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]]))
+        dk_x = np.sum(np.array([- gam_x[nu, mu]*k[mu]*k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]]))
+        dk_y = np.sum(np.array([- gam_y[nu, mu]*k[mu]*k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]]))
+        dk_z = np.sum(np.array([- gam_z[nu, mu]*k[mu]*k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]]))
 
         return dk_t, dk_x, dk_y, dk_z
 
@@ -208,7 +208,7 @@ class GeodesicIntegratorSchwarzschildXYZ:
             k__mu.append(g@k4_mu[i])
         return k__mu, x__mu
 
-    def convert_to_sph(self, k4)....
+    #def convert_to_sph(self, k4)....
 
     ################################################################################################
     #
