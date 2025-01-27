@@ -112,9 +112,9 @@ class GeodesicIntegratorSchwarzschildXYZ:
                                      self.g__mu__nu_cart.diff(self.y), self.g__mu__nu_cart.diff(self.z)]
 
         # We lambdify these to get numpy arrays
-        self.g__mu__nu_cart_lamb = sp.lambdify([self.t, self.x, self.y, self.z, self.r_s], self.g__mu__nu_cart)
-        self.g_mu_nu_cart_lamb = sp.lambdify([self.t, self.x, self.y, self.z, self.r_s], self.g_mu_nu_cart)
-        self.g__mu__nu_cart_diff_lamb = sp.lambdify([self.t, self.x, self.y, self.z, self.r_s], self.g__mu__nu_cart_diff)
+        self.g__mu__nu_cart_lamb = sp.lambdify([self.t, self.x, self.y, self.z, self.r_s], self.g__mu__nu_cart, "numpy")
+        self.g_mu_nu_cart_lamb = sp.lambdify([self.t, self.x, self.y, self.z, self.r_s], self.g_mu_nu_cart, "numpy")
+        self.g__mu__nu_cart_diff_lamb = sp.lambdify([self.t, self.x, self.y, self.z, self.r_s], self.g__mu__nu_cart_diff, "numpy")
 
         # Norm of k
         # the norm of k determines if you have a massive particle (-1), a mass-less photon (0) 
@@ -200,12 +200,19 @@ class GeodesicIntegratorSchwarzschildXYZ:
         #                                         self.k_t_from_norm, "numpy")
 
 
-    def convert_to_oneform(self, k4_mu, x4_mu):
-        x__mu, k__mu = [], []
-        for i in range(len(k4_mu)):
-            g = self.g__mu__nu_cart_lamb(*x4_mu[i], self.r_s_value)
-            x__mu.append(g@x4_mu[i])
-            k__mu.append(g@k4_mu[i])
+    # def convert_to_oneform(self, k4_mu_xyz, x4_mu_xyz):
+
+    #     x3_mu_sph, k3_mu_sph = self.conversions.convert_xyz_to_sph(x4_mu_xyz[1:], k4_mu_xyz[1:])
+
+
+
+
+
+        # x__mu, k__mu = [], []
+        # for i in range(len(k4_mu)):
+        #     g = self.g__mu__nu_cart_lamb(*x4_mu[i], self.r_s_value)
+        #     x__mu.append(g@x4_mu[i])
+        #     k__mu.append(g@k4_mu[i])
         return k__mu, x__mu
 
     #def convert_to_sph(self, k4)....
