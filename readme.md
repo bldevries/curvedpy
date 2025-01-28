@@ -1,8 +1,11 @@
-<p align="center">
+
 # Curvedpy - a general relativity toolkit - <img style="float: right;" src="images/surf_vis_logo.png" alt="" width="150" height="auto">
 
+<p align="center">
 Author: <a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de Vries</a>. PhD and Scientific visualisation advisor at <a href="https://www.surf.nl" target="_blank">SURF</a>.
+</p>
 
+<p align="center">
 [<img src="images/blackhole_banner.gif" alt="" width="720" height="auto">]("")
 </p>
 
