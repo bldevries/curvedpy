@@ -1,9 +1,11 @@
 
 <div style="font-style: italic; text-align: center;" markdown="1">
-
 # Curvedpy
-
 </div>
+
+<p style="font-style: italic; text-align: center;" markdown="1">
+# Curvedpy
+</p>
 
 # Curvedpy - a general relativity toolkit - <img style="float: right;" src="images/surf_vis_logo.png" alt="" width="150" height="auto">
 
