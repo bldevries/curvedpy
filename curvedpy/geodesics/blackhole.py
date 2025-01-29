@@ -2,7 +2,6 @@ import sympy as sp
 import numpy as np
 from scipy.integrate import solve_ivp
 import time
-#import multiprocessing as mp
 from curvedpy.utils.conversions import Conversions
 from curvedpy.geodesics.blackhole_integrators.schwarzschild_XYZ import GeodesicIntegratorSchwarzschildXYZ
 

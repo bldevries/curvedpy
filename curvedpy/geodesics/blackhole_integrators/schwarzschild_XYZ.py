@@ -3,7 +3,6 @@ import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.optimize import fsolve
 import time
-#import multiprocessing as mp
 from curvedpy.utils.conversions import Conversions
 
 # -------------------------------
@@ -40,8 +39,6 @@ class GeodesicIntegratorSchwarzschildXYZ:
     #
     ################################################################################################
     def __init__(self, mass=1.0, time_like = False, verbose=False):
-
-
 
         self.M = mass
         self.r_s_value = 2*self.M 
@@ -88,8 +85,6 @@ class GeodesicIntegratorSchwarzschildXYZ:
         self.g__mu__nu_cart_pre_sub = self.g__mu__nu_cart
 
         self.g__mu__nu_cart = self.g__mu__nu_cart.subs(self.alp, self.alp_sub).subs(self.r, self.r_sub)
-        #self.g_mu_nu_cart = self.g__mu__nu_cart.inv()
-
 
         g_00 = -1*( 1/(1-self.r_s/self.r) )
         g_01, g_02, g_03 = 0,0,0
@@ -159,8 +154,6 @@ class GeodesicIntegratorSchwarzschildXYZ:
 
     # Connection Symbols
     def gamma_func(self, g, g_inv, g_diff, sigma, mu, nu):
-        #coord_symbols = [self.t, self.x, self.y, self.z]#[self.t, self.r, self.th, self.ph]
-
         # 29 Jan 2025
         # A list comprehension does NOT speed the following code up!
         # This something like this is NOT better:
@@ -173,32 +166,6 @@ class GeodesicIntegratorSchwarzschildXYZ:
                             g_diff[nu][rho, mu] - \
                             g_diff[rho][mu, nu] )
         return g_sigma_mu_nu
-
-
-    # def k_t_from_norm(self, k0, x0, t=0):
-    #     sub_list = [(self.k_x, k0[0]),\
-    #                 (self.k_y, k0[1]),\
-    #                 (self.k_z, k0[2]),\
-    #                 (self.t, t),\
-    #                 (self.x, x0[0]),\
-    #                 (self.y, x0[1]),\
-    #                 (self.z, x0[2]),\
-    #                 (self.r_s, self.r_s_value),\
-    #                 ]
-
-    #     norm_k_subbed = self.norm_k.subs(sub_list)
-
-    #     # Now we calculate k_t using the norm. This eliminates one of the differential equations.
-    #     # time_like = True: calculates a geodesic for a massive particle
-    #     # time_like = False: calculates a geodesic for a photon
-    #     if (self.time_like):
-    #         k_t_from_norm = sp.solve(norm_k_subbed+1, self.k_t)#[1]
-    #     else:
-    #         k_t_from_norm = sp.solve(norm_k_subbed, self.k_t)#[1]
-
-    #     if len(k_t_from_norm) > 1:
-    #         k_t_from_norm = k_t_from_norm[1]
-    #     return float(k_t_from_norm)
 
     def k_t_from_norm(self, k0, x0, t=0):
         # Now we calculate k_t using the norm. This eliminates one of the differential equations.
@@ -216,7 +183,6 @@ class GeodesicIntegratorSchwarzschildXYZ:
     #
     ################################################################################################
     def calc_trajectory(self, k0_xyz, x0_xyz, *args, **kargs):
-        #mp_on = False
 
         if not isinstance(k0_xyz, np.ndarray): k0_xyz = np.array(k0_xyz)
         if not isinstance(x0_xyz, np.ndarray): x0_xyz = np.array(x0_xyz)
@@ -262,9 +228,8 @@ class GeodesicIntegratorSchwarzschildXYZ:
                        ):
 
         # Calculate from norm of starting condition
-        k0_t = self.k_t_from_norm(k0=k0_xyz, x0= x0_xyz, t = 0)#, r_s = self.r_s_value)
-        #k0_t = self.k_t_from_norm_lamb(*k0_xyz, *x0_xyz, t = 0, r_s = self.r_s_value)
-        values_0 = [k0_t, *k0_xyz, *x0_xyz]#[ k0_x, x0, k0_y, y0, k0_z, z0, k0_t ]
+        k0_t = self.k_t_from_norm(k0=k0_xyz, x0= x0_xyz, t = 0)
+        values_0 = [k0_t, *k0_xyz, *x0_xyz]
 
 
         r0 = np.linalg.norm(x0_xyz)
@@ -286,14 +251,11 @@ class GeodesicIntegratorSchwarzschildXYZ:
 
             def hit_blackhole(t, y): 
                 eps = 0.01
-                #k_x, x, k_y, y, k_z, z, k_t = y
                 k_t, k_x, k_y, k_z, x, y, z = y
-                #if verbose: print("Event - hit_blackhole: ", r-self.r_s_value)
                 return np.sqrt(x**2+y**2+z**2) - (self.r_s_value+eps)
             hit_blackhole.terminal = True
 
             def reached_end(t, y): 
-                #k_x, x, k_y, y, k_z, z, k_t = y
                 k_t, k_x, k_y, k_z, x, y, z = y
                 return np.sqrt(x**2+y**2+z**2) - R_end
             reached_end.terminal = True
