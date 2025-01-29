@@ -52,3 +52,6 @@ class TestConversions(unittest.TestCase):
 
         np.std(xl), np.std(yl), np.std(zl), np.std(kxl), np.std(kyl), np.std(kzl)
         self.assertTrue( round(np.std(xl), round_lvl) == 0.0)
+
+if __name__ == '__main__':
+    unittest.main()

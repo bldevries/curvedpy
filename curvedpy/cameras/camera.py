@@ -1,10 +1,5 @@
 import numpy as np
-#from curvedpy import Conversions
-#from curvedpy.geodesics.kerr import GeodesicIntegratorKerr, 
 from curvedpy.geodesics.blackhole import BlackholeGeodesicIntegrator
-#from curvedpy.geodesics.schwarzschild import GeodesicIntegratorSchwarzschildXYZ
-#from curvedpy.geodesics.geodesic_integrator_schwarzschild_XYZ import GeodesicIntegratorSchwarzschildXYZ
-#from curvedpy.geodesics.geodesic_integrator_schwarzschild_XYZ_v2 import GeodesicIntegratorSchwarzschildXYZ_v2
 from curvedpy.utils.utils import getImpactParam
 import random
 import os
@@ -36,10 +31,8 @@ class RelativisticCamera:
                         sampling_seed = 43,\
                         y_lim = [], x_lim = [],\
                         max_step = np.inf,\
-                        #force_schwarzschild_integrator = False,\
-                        simplify_inv = True,\
                         verbose=False,\
-                        verbose_init = False):
+                        verbose_init = True):
 
         self.verbose = verbose
         self.integrator = integrator
@@ -70,18 +63,7 @@ class RelativisticCamera:
         self.N = self.samples*self.width*self.height
 
         self.max_step = max_step
-        
-        #self.schwarzschild_integrator = force_schwarzschild_integrator
-
-        # if self.integrator == "ss-sph":
-        #     self.gi = GeodesicIntegratorKerr(verbose=self.verbose, mass = self.M, a = 0.0)
-        # elif self.integrator == "ss-xyz":
         self.gi = BlackholeGeodesicIntegrator(mass=self.M, a=self.a, verbose = self.verbose)
-        # elif self.integrator == "ss_xyz_hardcoded":
-        #     self.gi = GeodesicIntegratorSchwarzschildXYZ_v2(mass=self.M, verbose = self.verbose)
-        # elif self.integrator == "kerr-sph":
-        #     self.gi = GeodesicIntegratorKerr(simplify_inv = simplify_inv, verbose=self.verbose, verbose_init = verbose_init, mass = self.M, a = self.a)            
-
 
         self.results = None
 
@@ -103,7 +85,6 @@ class RelativisticCamera:
             print(f"  - {self.x_lim=}")
             print(f"  - {self.max_step=}")
             #print(f"  - {force_schwarzschild_integrator=}")
-            print(f"  - {simplify_inv=}")
             print("--")
 
 
@@ -197,9 +178,9 @@ class RelativisticCamera:
         self.ray_blackhole_hit = np.zeros(self.width * self.height * 1)
         self.ray_blackhole_hit.shape = self.height, self.width
 
-        print(f"Starting run_mp on {cores=}")
+        if verbose: print(f"Starting run_mp on {cores=}")
         k0, x0, pixel = self.get_start_values()
-        print(f"  We have {len(k0)} models to run at {self.height}x{self.width}")
+        if verbose: print(f"  We have {len(k0)} models to run at {self.height}x{self.width}")
 
         start_values = list(zip(np.array_split(k0, cores), np.array_split(x0, cores)))
         
@@ -232,7 +213,7 @@ class RelativisticCamera:
             self.ray_end[y, x, 3:6] = list(zip(*k_xyz))[-1]
             
         #MOET NOG DE RAY_END EN DERGELIJKE SETTEN!
-        print(f"  Running is done and we have {len(self.results)} results")
+        if verbose: print(f"  Running is done and we have {len(self.results)} results")
 
 
     def run(self, verbose=False, verbose_lvl = 1):
