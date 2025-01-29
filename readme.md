@@ -1,6 +1,6 @@
 
 <h1 align="center">Curvedpy </h1>
-<b align="center">- a general relativity toolkit -</b>
+<p align="center"><b>- a general relativity toolkit -</b></p>
 <div align="center">
 <img src="images/blackhole_banner.gif" alt="" width="720" height="auto">
 </div>
