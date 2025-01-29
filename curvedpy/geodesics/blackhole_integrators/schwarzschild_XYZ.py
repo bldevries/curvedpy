@@ -1,6 +1,7 @@
 import sympy as sp
 import numpy as np
 from scipy.integrate import solve_ivp
+from scipy.optimize import fsolve
 import time
 #import multiprocessing as mp
 from curvedpy.utils.conversions import Conversions
@@ -160,62 +161,56 @@ class GeodesicIntegratorSchwarzschildXYZ:
     def gamma_func(self, g, g_inv, g_diff, sigma, mu, nu):
         #coord_symbols = [self.t, self.x, self.y, self.z]#[self.t, self.r, self.th, self.ph]
 
+        # 29 Jan 2025
+        # A list comprehension does NOT speed the following code up!
+        # This something like this is NOT better:
+        # g_sigma_mu_nu = np.sum(np.array( [ 1/2 * g_inv[sigma, rho] * (g_diff[mu][nu, rho] + g_diff[nu][rho, mu] - g_diff[rho][mu, nu] ) for rho in [0,1,2,3]] ) )
+        # This is because you make a list and then sum, while you do not need to make the list. Normal for loop is fasters that I found so far.
         g_sigma_mu_nu = 0
         for rho in [0,1,2,3]:
-            if g[sigma, rho] != 0:
-                g_sigma_mu_nu += 1/2 * g_inv[sigma, rho] * (\
-                                g_diff[mu][nu, rho] + \
-                                g_diff[nu][rho, mu] - \
-                                g_diff[rho][mu, nu] )
-            else:
-                g_sigma_mu_nu += 0
+            g_sigma_mu_nu += 1/2 * g_inv[sigma, rho] * (\
+                            g_diff[mu][nu, rho] + \
+                            g_diff[nu][rho, mu] - \
+                            g_diff[rho][mu, nu] )
         return g_sigma_mu_nu
 
+
+    # def k_t_from_norm(self, k0, x0, t=0):
+    #     sub_list = [(self.k_x, k0[0]),\
+    #                 (self.k_y, k0[1]),\
+    #                 (self.k_z, k0[2]),\
+    #                 (self.t, t),\
+    #                 (self.x, x0[0]),\
+    #                 (self.y, x0[1]),\
+    #                 (self.z, x0[2]),\
+    #                 (self.r_s, self.r_s_value),\
+    #                 ]
+
+    #     norm_k_subbed = self.norm_k.subs(sub_list)
+
+    #     # Now we calculate k_t using the norm. This eliminates one of the differential equations.
+    #     # time_like = True: calculates a geodesic for a massive particle
+    #     # time_like = False: calculates a geodesic for a photon
+    #     if (self.time_like):
+    #         k_t_from_norm = sp.solve(norm_k_subbed+1, self.k_t)#[1]
+    #     else:
+    #         k_t_from_norm = sp.solve(norm_k_subbed, self.k_t)#[1]
+
+    #     if len(k_t_from_norm) > 1:
+    #         k_t_from_norm = k_t_from_norm[1]
+    #     return float(k_t_from_norm)
+
     def k_t_from_norm(self, k0, x0, t=0):
-        sub_list = [(self.k_x, k0[0]),\
-                    (self.k_y, k0[1]),\
-                    (self.k_z, k0[2]),\
-                    (self.t, t),\
-                    (self.x, x0[0]),\
-                    (self.y, x0[1]),\
-                    (self.z, x0[2]),\
-                    (self.r_s, self.r_s_value),\
-                    ]
-        # print(self.norm_k)
-        norm_k_subbed = self.norm_k.subs(sub_list)
-        # print(self.norm_k)
-        # print(norm_k_subbed)
-        # print(sp.solve(norm_k_subbed, self.k_t))
         # Now we calculate k_t using the norm. This eliminates one of the differential equations.
         # time_like = True: calculates a geodesic for a massive particle
         # time_like = False: calculates a geodesic for a photon
         if (self.time_like):
-            k_t_from_norm = sp.solve(norm_k_subbed+1, self.k_t)#[1]
+            def wrap(k_t): return self.norm_k_lamb(k_t, k0[0], k0[1], k0[2], x0[0], x0[1], x0[2], self.r_s_value)+1
+            k_t_from_norm = fsolve(wrap, 1.0)
         else:
-            k_t_from_norm = sp.solve(norm_k_subbed, self.k_t)#[1]
-        if len(k_t_from_norm) > 1:
-            k_t_from_norm = k_t_from_norm[1]
-        return float(k_t_from_norm)
-        # self.k_t_from_norm_lamb = sp.lambdify([self.k_x, self.k_y, self.k_z, self.x, self.y, self.z, self.t, self.r_s], \
-        #                                         self.k_t_from_norm, "numpy")
+            k_t_from_norm = root = fsolve(self.norm_k_lamb, 1.0, args = (k0[0], k0[1], k0[2], x0[0], x0[1], x0[2], self.r_s_value) )
 
-
-    # def convert_to_oneform(self, k4_mu_xyz, x4_mu_xyz):
-
-    #     x3_mu_sph, k3_mu_sph = self.conversions.convert_xyz_to_sph(x4_mu_xyz[1:], k4_mu_xyz[1:])
-
-
-
-
-
-        # x__mu, k__mu = [], []
-        # for i in range(len(k4_mu)):
-        #     g = self.g__mu__nu_cart_lamb(*x4_mu[i], self.r_s_value)
-        #     x__mu.append(g@x4_mu[i])
-        #     k__mu.append(g@k4_mu[i])
-        return k__mu, x__mu
-
-    #def convert_to_sph(self, k4)....
+        return k_t_from_norm[0]
 
     ################################################################################################
     #

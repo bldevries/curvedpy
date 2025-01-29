@@ -124,7 +124,6 @@ class GeodesicIntegratorSchwarzschildXYZ:
                      ])
 
         return M.T*g__mu__nu_cart*M # !check
-        #return sp.Matrix([[sum([ sum([M[mu_cart, mu]*M[nu_cart,nu]*g__mu__nu_cart[mu, nu] for mu in [0, 1, 2, 3]]) for nu in [0, 1, 2, 3]]) for nu_cart in [0, 1, 2, 3]] for mu_cart in [0, 1, 2, 3]])
 
 
     def trans_inv_to_xyz(self, g_mu_nu):
@@ -138,7 +137,6 @@ class GeodesicIntegratorSchwarzschildXYZ:
                      ]).subs(self.to_cart_sub_list)
 
         return M*g_mu_nu*M.T 
-        #return sp.Matrix([[sum([ sum([M[mu_cart, mu]*M[nu_cart,nu]*g_mu_nu[mu, nu] for mu in [0, 1, 2, 3]]) for nu in [0, 1, 2, 3]]) for nu_cart in [0, 1, 2, 3]] for mu_cart in [0, 1, 2, 3]])
 
 
     ################################################################################################
