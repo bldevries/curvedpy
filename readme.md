@@ -1,6 +1,8 @@
 
 <div style="font-style: italic; text-align: center;" markdown="1">
+
 # Curvedpy
+
 </div>
 
 <p style="font-style: italic; text-align: center;" markdown="1">
