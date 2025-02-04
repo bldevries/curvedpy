@@ -5,7 +5,7 @@ import numpy as np
 import random
 from curvedpy.utils.conversions import Conversions
 from curvedpy.geodesics.blackhole import BlackholeGeodesicIntegrator
-from curvedpy.metrics.schwarzschild import SchwarzschildMetricSpherical
+from curvedpy.metrics.schwarzschild_metric import SchwarzschildMetricSpherical
 
 # python -m unittest discover -v test
 # python test/test_geodesic_integration.py -v
@@ -113,15 +113,18 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
     def setUp(self):
         self.converter = Conversions()
 
-        self.ssm = SchwarzschildMetricSpherical()
 
         self.mass = 1.0
         self.start_t, self.end_t, self.steps = 0, 60, 60
         self.max_step = 0.1
         self.round_level = 10
 
+        self.ssm = SchwarzschildMetricSpherical(mass = self.mass)
+
+
     def test_SCHW_check_conserved_quantities_photons(self):
         self.gi = BlackholeGeodesicIntegrator(mass = self.mass, time_like = False)
+
         #self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = False)#metric='schwarzschild', mass=1.0)
 
         k0_sph = np.array([0.0, 0., -0.1]) 
@@ -136,7 +139,7 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         x4_mu_sph = np.array([x4_mu_xyz[0], *x3_mu_sph])
         k4_mu_sph = np.array([k4_mu_xyz[0], *k3_mu_sph])
         # Convert the 4vectors to oneforms
-        k__mu = self.ssm.oneform(k4_mu_sph, x4_mu_sph, r_s = self.gi.get_r_s())
+        k__mu = self.ssm.oneform(k4_mu_sph, x4_mu_sph)
 
         L = k__mu[3]
         self.assertTrue( round(np.std(L),self.round_level) == 0.0 )
@@ -145,6 +148,7 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
 
     def test_SCHW_check_conserved_quantities_massive_particles(self):
         self.gi = BlackholeGeodesicIntegrator(mass = self.mass, time_like = True)
+
         #self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = True)#metric='schwarzschild', mass=1.0)
 
         k0_sph = np.array([0., 0., -0.1])
@@ -160,7 +164,7 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         x4_mu_sph = np.array([x4_mu_xyz[0], *x3_mu_sph])
         k4_mu_sph = np.array([k4_mu_xyz[0], *k3_mu_sph])
         # Convert the 4vectors to oneforms
-        k__mu = self.ssm.oneform(k4_mu_sph, x4_mu_sph, r_s = self.gi.get_r_s())
+        k__mu = self.ssm.oneform(k4_mu_sph, x4_mu_sph)
 
         L = k__mu[3]
         self.assertTrue( round(np.std(L),self.round_level) == 0.0 )
