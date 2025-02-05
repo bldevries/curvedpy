@@ -4,6 +4,8 @@ from scipy.integrate import solve_ivp
 import time
 from curvedpy.utils.conversions import Conversions
 from curvedpy.geodesics.blackhole_integrators.schwarzschild_XYZ import GeodesicIntegratorSchwarzschildXYZ
+from curvedpy.geodesics.blackhole_integrators.kerrschild_XYZ import GeodesicIntegratorKerrSchildXYZ
+
 
 class BlackholeGeodesicIntegrator:
 
@@ -12,11 +14,12 @@ class BlackholeGeodesicIntegrator:
     ################################################################################################
     #
     ################################################################################################
-    def __init__(self, mass=1.0, a = 0, time_like = False, verbose=False):
+    def __init__(self, mass=1.0, a = 0, time_like = False, auto_grad = False, verbose=False):
         if a == 0:
-            self.gi = GeodesicIntegratorSchwarzschildXYZ(mass=mass, time_like=time_like, verbose = verbose)
+            self.gi = GeodesicIntegratorSchwarzschildXYZ(mass=mass, time_like=time_like, auto_grad = auto_grad, verbose = verbose)
         else:
-            print("Kerr blackhole not officially implemented. But you can try curvedpy.geodesics.blackhole.kerr_SPH")
+            self.gi = GeodesicIntegratorKerrSchildXYZ(mass=mass, a=a, time_like=time_like, verbose = verbose)
+
 
     ################################################################################################
     #
