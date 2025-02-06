@@ -16,8 +16,10 @@ class BlackholeGeodesicIntegrator:
     ################################################################################################
     def __init__(self, mass=1.0, a = 0, time_like = False, auto_grad = False, verbose=False):
         if a == 0:
+            if verbose: print("Running Schwarzschild integrator in XYZ coords")
             self.gi = GeodesicIntegratorSchwarzschildXYZ(mass=mass, time_like=time_like, auto_grad = auto_grad, verbose = verbose)
         else:
+            if verbose: print("Running KerrSchild integrator in XYZ coords")
             self.gi = GeodesicIntegratorKerrSchildXYZ(mass=mass, a=a, time_like=time_like, verbose = verbose)
 
 
