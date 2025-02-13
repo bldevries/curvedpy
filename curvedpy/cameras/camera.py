@@ -24,8 +24,8 @@ class RelativisticCamera:
                         camera_rotation_euler_props=['x', 0], \
                         resolution = [64, 64],\
                         field_of_view = [0.3, 0.3],\
-                        integrator = "ss-xyz",\
-                        R_schwarzschild=1.0, \
+                        coordinates = "",\
+                        M=1.0, \
                         a = 0.0,\
                         samples = 1,\
                         sampling_seed = 43,\
@@ -35,9 +35,8 @@ class RelativisticCamera:
                         verbose_init = True):
 
         self.verbose = verbose
-        self.integrator = integrator
 
-        self.M = 1/2*R_schwarzschild
+        self.M = M
         self.a = a
 
         self.camera_location = camera_location
@@ -45,7 +44,8 @@ class RelativisticCamera:
         self.camera_rotation_euler = Rotation.from_euler(camera_rotation_euler_props[0], camera_rotation_euler_props[1], degrees=True)
         self.camera_rotation_matrix = self.camera_rotation_euler.as_matrix()
 
-        self.field_of_view_x, self.field_of_view_y = field_of_view
+        self.field_of_view = field_of_view
+        self.field_of_view_x, self.field_of_view_y = self.field_of_view
 
         self.height, self.width = resolution
 
@@ -63,16 +63,21 @@ class RelativisticCamera:
         self.N = self.samples*self.width*self.height
 
         self.max_step = max_step
-        self.gi = BlackholeGeodesicIntegrator(mass=self.M, a=self.a, verbose = self.verbose)
+        if coordinates == "":
+            coordinates = "SPH2PATCH"
+        self.coordinates = coordinates
+
+
+
+        self.gi = BlackholeGeodesicIntegrator(mass=self.M, a=self.a, coordinates=self.coordinates, verbose = self.verbose)
 
         self.results = None
 
         if verbose_init:
             print("Camera Settings: ")
-            print(f"  - {self.integrator=}")
+            print(f"  - {self.coordinates=}")
             print(f"  - {self.M=}")
             print(f"  - {self.a=}")
-            print(f"  - {R_schwarzschild=}")
             print(f"  - {self.verbose=}")
             print(f"  - {verbose_init=}")
             print(f"  - {self.camera_location=}")
@@ -90,7 +95,7 @@ class RelativisticCamera:
 
 
     def filename_suggestion(self):
-        fn = "integrator_"+str(self.integrator)+"_res_"+str(self.height)+"x"+str(self.width)+\
+        fn = "coordinates_"+str(self.coordinates)+"_res_"+str(self.height)+"x"+str(self.width)+\
                 "_fov-x_"+str(self.field_of_view_x)+"_fov-y_"+str(self.field_of_view_y)+\
                 "_a_"+str(self.a)+"_M_"+str(self.M)+\
                 "_xyz0_"+str(self.camera_location[0])+"_"+str(self.camera_location[1])+"_"+str(self.camera_location[2])+\
@@ -101,6 +106,17 @@ class RelativisticCamera:
         # if self.schwarzschild_integrator:
         #     fn += "_forceSS_"+str(self.schwarzschild_integrator)
         return fn
+
+    def cam_information_dict(self):
+        return \
+            {"M":self.M, "a":self.a, "camera_location": self.camera_location, \
+            "camera_rotation_euler_props":self.camera_rotation_euler_props, \
+            "field_of_view": self.field_of_view, \
+            "height":self.height, "width":self.width,\
+            "y_lim":self.y_lim, "x_lim":self.x_lim,\
+            "samples":self.samples,\
+            "max_step":self.max_step,"coordinates":self.coordinates,\
+            }
 
     def get_x_render(self, x):
         return self.field_of_view_x * (x-int(self.width/2))/self.width
@@ -202,7 +218,10 @@ class RelativisticCamera:
 
         for i in range(len(pixel)):
             y, x = pixel[i]
-            self.ray_blackhole_hit[y, x] = int(self.results[i][2].hit_blackhole)
+            if isinstance(self.results[i][2], list):
+                self.ray_blackhole_hit[y, x] = int(self.results[i][2][-1].hit_blackhole)
+            else:
+                self.ray_blackhole_hit[y, x] = int(self.results[i][2].hit_blackhole)
             k_xyz, x_xyz = self.results[i][0], self.results[i][1]
             #print("plplpl", x_xyz)
 
@@ -273,40 +292,65 @@ class RelativisticCamera:
 
                     self.results.append([k_xyz, x_xyz, res])
 
-        #, self.ray_end, self.ray_blackhole_hit
-
-
-
-
-
-        # self.results = self.gi.calc_trajectory( k0_xyz = ray_directions, \
-        #                                                 x0_xyz = camera_locations,\
-        #                                                 R_end = -1,\
-        #                                                 curve_start = 0, \
-        #                                                 curve_end = 50, \
-        #                                                 nr_points_curve = 50, \
-        #                                                 method = "RK45",\
-        #                                                 max_step = np.inf,\
-        #                                                 first_step = None,\
-        #                                                 rtol = 1e-3,\
-        #                                                 atol = 1e-6,\
-        #                                                 verbose = self.verbose \
-        #                                                 )
-
-
-        #if result['start_inside_hole'] == False:
-        #    print()
-
-        #return self.results
-
-
 
     def save(self, fname, directory):
         if os.path.isdir(directory):
             with open(os.path.join(directory, fname+'.pkl'), 'wb') as f:
                 pickle.dump({"results": self.results, "ray_end": self.ray_end, "ray_blackhole_hit": self.ray_blackhole_hit}, f)
+
         else:
             print("dir not found")
+
+    def save_minimal(self, fname, directory="."):
+        extension = ".csv"
+        if os.path.isdir(directory):
+            x, y, z = self.ray_end[:,:,0], self.ray_end[:,:,1], self.ray_end[:,:,2]
+            kx, ky, kz = self.ray_end[:,:,3], self.ray_end[:,:,4], self.ray_end[:,:,5]
+
+            h = "Cartesian x component in 3-space of end direction of a photon. \n"+\
+                "Rows are camera height direction, columns are width direction. \n"+\
+                "You can, for example, load this file using numpy.loadtxt. \n"+\
+                str(self.cam_information_dict())
+            np.savetxt(os.path.join(directory, 'k_x_'+fname+extension), kx, header = h)
+            h = "Cartesian y component in 3-space of end direction of a photon. \n"+\
+                "Rows are camera height direction, columns are width direction. \n"+\
+                "You can, for example, load this file using numpy.loadtxt. \n"+\
+                str(self.cam_information_dict())
+            np.savetxt(os.path.join(directory, 'k_y_'+fname+extension), ky, header=h)
+            h = "Cartesian z component in 3-space of end direction of a photon. \n"+\
+                "Rows are camera height direction, columns are width direction. \n"+\
+                "You can, for example, load this file using numpy.loadtxt. \n"+\
+                str(self.cam_information_dict())
+            np.savetxt(os.path.join(directory, 'k_z_'+fname+extension), kz, header=h)
+
+            h = "Cartesian x component in 3-space of end point of a photon. \n"+\
+                "Rows are camera height direction, columns are width direction. \n"+\
+                "You can, for example, load this file using numpy.loadtxt. \n"+\
+                str(self.cam_information_dict())
+            np.savetxt(os.path.join(directory, 'x_'+fname+extension), x, header=h)
+            h = "Cartesian y component in 3-space of end point of a photon. \n"+\
+                "Rows are camera height direction, columns are width direction. \n"+\
+                "You can, for example, load this file using numpy.loadtxt. \n"+\
+                str(self.cam_information_dict())
+            np.savetxt(os.path.join(directory, 'y_'+fname+extension), y, header=h)
+            h = "Cartesian z component in 3-space of end point of a photon. \n"+\
+                "Rows are camera height direction, columns are width direction. \n"+\
+                "You can, for example, load this file using numpy.loadtxt. \n"+\
+                str(self.cam_information_dict())
+            np.savetxt(os.path.join(directory, 'z_'+fname+extension), z, header=h)
+
+            h = "Hit blackhole: 1 if the photon end in the black hole and 0 if not. \n"+\
+                "Rows are camera height direction, columns are width direction. \n"+\
+                "You can, for example, load this file using numpy.loadtxt. \n"+\
+                str(self.cam_information_dict())
+            np.savetxt(os.path.join(directory, 'hit_blackhole'+extension), self.ray_blackhole_hit, header=h)
+
+            with open(os.path.join(directory, "full_geodesics_"+fname+'.pkl'), 'wb') as f:
+                k, x, res = list(zip(*self.results))
+                pickle.dump({"cam_info": self.cam_information_dict(), "k":k, "x":x }, f)
+
+    
+
 
     def load(self, filepath):
         if os.path.isfile(filepath):

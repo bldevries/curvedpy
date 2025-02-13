@@ -3,7 +3,6 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import time
 from curvedpy.metrics.schwarzschild_metric import SchwarzschildMetricXYZ
-from curvedpy.metrics.schwarzschild_metric_AUTOGRAD import SchwarzschildMetricXYZ_AUTOGRAD
 
 from curvedpy.utils.conversions import Conversions
 
@@ -56,10 +55,8 @@ class GeodesicIntegratorSchwarzschildXYZ:
             print(f"  - {self.verbose=}")
             print("--")
 
-        if auto_grad:
-            self.metric = SchwarzschildMetricXYZ_AUTOGRAD(mass, time_like, verbose)
-        else:
-            self.metric = SchwarzschildMetricXYZ(mass, time_like, verbose)
+        self.metric = SchwarzschildMetricXYZ(mass, time_like, verbose)
+        
         # # Define symbolic variables
         # #self.t, self.r, self.th, self.ph, self.r_s = sp.symbols("t r \\theta \\phi r_s", real=True)
         # self.t, self.x, self.y, self.z, = sp.symbols('t x y z', real=True)

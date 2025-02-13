@@ -3,7 +3,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import time
 from curvedpy.metrics.kerrschild_metric import KerrSchildMetricXYZ
-from curvedpy.metrics.schwarzschild_metric_AUTOGRAD import SchwarzschildMetricXYZ_AUTOGRAD
+#from curvedpy.metrics.schwarzschild_metric_AUTOGRAD import SchwarzschildMetricXYZ_AUTOGRAD
 
 from curvedpy.utils.conversions import Conversions
 

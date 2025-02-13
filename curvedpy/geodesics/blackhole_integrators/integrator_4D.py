@@ -18,6 +18,7 @@ class Integrator4D:
                         get_dk,\
                         hit_blackhole,\
                         stop_integration = None,\
+                        stop_integration_coord_check = None,\
                         curve_start = 0, \
                         curve_end = 50, \
                         nr_points_curve = 50, \
@@ -49,6 +50,10 @@ class Integrator4D:
             stop_integration.terminal = True
             events.append(stop_integration)
 
+        if stop_integration_coord_check:
+            stop_integration_coord_check.terminal = True
+            events.append(stop_integration_coord_check)
+
         values_0 = [ *k4_start, *x4_start ]
 
         if nr_points_curve == 0:
@@ -70,5 +75,7 @@ class Integrator4D:
         result.update({"hit_blackhole": len(result.t_events[0])>0})
         if stop_integration:
             result.update({"end_check": len(result.t_events[1])>0})
+        if stop_integration_coord_check:
+            result.update({"stop_integration_coord_check": len(result.t_events[2])>0})
 
         return result

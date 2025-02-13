@@ -4,7 +4,6 @@ import numpy as np
 class Conversions4D:
     def __init__(self, verbose=False):
 
-        # NOTE TO SELF: I treat things as 3 vectors here. What if the metric has a mixed term, should I not include t? (26/11/2024)
         self.setup_sph_to_xyz_conversion()
         self.setup_xyz_to_sph_conversion()
         #self.setup_bl_to_xyz_conversion()
@@ -16,7 +15,7 @@ class Conversions4D:
 
         r = sp.sqrt(x**2+y**2+z**2)
         th = sp.acos(z/r)
-        phi = sp.atan(y/x)
+        phi = sp.atan2(y,x)
 
         M_xyz_to_sph = sp.Matrix([[1, 0, 0, 0],\
                                   [0, r.diff(x), r.diff(y), r.diff(z)],\

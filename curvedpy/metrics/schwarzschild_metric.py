@@ -275,38 +275,11 @@ class SchwarzschildMetricSpherical:
     #
     ################################################################################################
     def get_dk(self, kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val):
-        print(round(r_val, 3), round(th_val, 3), round(ph_val,3))
-        if r_val*np.sin(th_val) < 2: # If you are within a cylindre around the z-axis
-            
-            # Use xyz coordinates
-            k4_sph = np.array([kt_val, kr_val, kth_val, kph_val])
-            x4_sph = np.array([t_val, r_val, th_val, ph_val])
-
-            k4_xyz, x4_xyz = self.conversions4D.convert_sph4_to_xyz4(k4_sph, x4_sph)
-
-            print(f"Start value {x4_sph=} and in cart {x4_xyz=}")
-            
-            dk_t, dk_x, dk_y, dk_z = self.pole_metric_XYZ.get_dk(*k4_xyz, *x4_xyz)
-
-            print("dk xyz", dk_x, dk_y, dk_z)
-
-            dk_xyz = np.array([dk_t, dk_x, dk_y, dk_z])
-            
-            dk_sph, x4_sph = self.conversions4D.convert_xyz4_to_sph4(dk_xyz, x4_xyz)
-
-            print("dk sph", dk_sph)
-
-            print(f"And transf back {x4_sph=}")
-
-            return dk_sph
-
-        else:
-            # Use spherical coordinates
-            return \
-                self.dk_t_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
-                self.dk_r_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
-                self.dk_th_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
-                self.dk_ph_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
+        return \
+            self.dk_t_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
+            self.dk_r_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
+            self.dk_th_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
+            self.dk_ph_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
     
     ################################################################################################
     #
