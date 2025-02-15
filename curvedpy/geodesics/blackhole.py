@@ -19,16 +19,16 @@ class BlackholeGeodesicIntegrator:
     ################################################################################################
     #
     ################################################################################################
-    def __init__(self, mass=1.0, a = 0, coordinates = "SPH2PATCH", time_like = False, auto_grad = False, verbose=False):
+    def __init__(self, mass=1.0, a = 0, coordinates = "SPH2PATCH", theta_switch = 0.2*np.pi, time_like = False, auto_grad = False, verbose=False):
         if a == 0:
             if coordinates == "xyz":
                 if verbose: print("Running Schwarzschild integrator in XYZ coords")
                 self.gi = GeodesicIntegratorSchwarzschildXYZ(mass=mass, time_like=time_like, auto_grad = auto_grad, verbose = verbose)
             elif coordinates == "SPH2PATCH":
                 if verbose: print("Running Schwarzschild integrator in SPH1SPH2 coords")
-                self.gi = GeodesicIntegratorSchwarzschildSPH1SPH2(mass=mass, time_like=time_like, verbose = verbose)
+                self.gi = GeodesicIntegratorSchwarzschildSPH1SPH2(mass=mass, theta_switch = theta_switch, time_like=time_like, verbose = verbose)
             elif coordinates == "SPH": 
-                self.gi = GeodesicIntegratorSchwarzschildSPH1SPH2(mass=mass, time_like=time_like, verbose = verbose)
+                self.gi = GeodesicIntegratorSchwarzschildSPH1SPH2(mass=mass, theta_switch = theta_switch, time_like=time_like, verbose = verbose)
             else:
                 print("NO INTEGRATOR SELECTED")
 
@@ -49,3 +49,8 @@ class BlackholeGeodesicIntegrator:
     ################################################################################################
     def get_r_s(self):
         return self.gi.r_s_value
+
+    def get_metric(self):
+        return self.gi.metric
+
+

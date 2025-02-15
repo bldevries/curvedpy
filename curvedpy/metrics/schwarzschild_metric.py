@@ -151,7 +151,16 @@ class SchwarzschildMetricXYZ:
 
         return k_t_from_norm[0]
 
+    def oneform(self, k4_mu, x4_mu):
 
+        if k4_mu.shape[0] == 4:
+            k4_mu = np.column_stack(k4_mu)
+        if x4_mu.shape[0] == 4:
+            x4_mu = np.column_stack(x4_mu)
+
+        k4__mu = np.column_stack(np.array([self.g__mu__nu_cart_lamb(*x4_mu[i],self.r_s_value)@k4_mu[i] for i in range(len(k4_mu))]))
+
+        return k4__mu
 
 ################################################################################################
 ################################################################################################

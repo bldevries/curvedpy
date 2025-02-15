@@ -6,6 +6,7 @@ import random
 from curvedpy.utils.conversions import Conversions
 from curvedpy.geodesics.blackhole import BlackholeGeodesicIntegrator
 from curvedpy.metrics.schwarzschild_metric import SchwarzschildMetricSpherical
+from curvedpy.utils.conversions_SPH2PATCH_3D import cart_to_sph1
 
 # python -m unittest discover -v test
 # python test/test_geodesic_integration.py -v
@@ -113,41 +114,35 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
     def setUp(self):
         self.converter = Conversions()
 
-
         self.mass = 1.0
         self.start_t, self.end_t, self.steps = 0, 60, 60
         self.max_step = 0.1
-        self.round_level = 10
+        self.round_level = 6
 
-        self.ssm = SchwarzschildMetricSpherical(mass = self.mass)
+        self.metric_sph = SchwarzschildMetricSpherical(mass = self.mass)
 
 
-    def test_SCHW_check_conserved_quantities_photons(self):
-        self.gi = BlackholeGeodesicIntegrator(mass = self.mass, time_like = False)
-
-        #self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = False)#metric='schwarzschild', mass=1.0)
+    def test_SCHW_SPH_check_conserved_quantities_photons(self):
+        self.gi = BlackholeGeodesicIntegrator(mass = self.mass, coordinates="SPH2PATCH", time_like = False)
 
         k0_sph = np.array([0.0, 0., -0.1]) 
         x0_sph = np.array([3, 1/2*np.pi, 1/4*np.pi])
+
         x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph)
         k, x, res =  self.gi.geodesic(k0_xyz, x0_xyz, verbose=False, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
-        #k_r, r, k_th, th, k_ph, ph, k_t = res.y
 
-        # Get the four vectors
-        k4_mu_xyz, x4_mu_xyz = res.k4_xyz, res.x4_xyz
-        x3_mu_sph, k3_mu_sph = self.converter.convert_xyz_to_sph(x4_mu_xyz[1:], k4_mu_xyz[1:])
-        x4_mu_sph = np.array([x4_mu_xyz[0], *x3_mu_sph])
-        k4_mu_sph = np.array([k4_mu_xyz[0], *k3_mu_sph])
-        # Convert the 4vectors to oneforms
-        k__mu = self.ssm.oneform(k4_mu_sph, x4_mu_sph)
+        k_sph, x_sph = cart_to_sph1(k, x)
+        k4 = np.array([res['k_t'], *k_sph])
+        x4 = np.array([res['t'], *x_sph])
+        k4__mu = self.gi.get_metric().oneform(k4, x4)
+        L = k4__mu[3]
+        E = k4__mu[0]
 
-        L = k__mu[3]
         self.assertTrue( round(np.std(L),self.round_level) == 0.0 )
-        E = k__mu[0]
         self.assertTrue( round(np.std(E),self.round_level) == 0.0 )
 
-    def test_SCHW_check_conserved_quantities_massive_particles(self):
-        self.gi = BlackholeGeodesicIntegrator(mass = self.mass, time_like = True)
+    def test_SCHW_SPH_check_conserved_quantities_massive_particles(self):
+        self.gi = BlackholeGeodesicIntegrator(mass = self.mass, coordinates="SPH2PATCH", time_like = True)
 
         #self.gi = cp.GeodesicIntegratorSchwarzschild(mass = self.mass, time_like = True)#metric='schwarzschild', mass=1.0)
 
@@ -156,20 +151,46 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph)
 
         k, x, res =  self.gi.geodesic(k0_xyz, x0_xyz, verbose=False, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
-        k_r, r, k_th, th, k_ph, ph, k_t = res.y
+        k_sph, x_sph = cart_to_sph1(k, x)
+        k4 = np.array([res['k_t'], *k_sph])
+        x4 = np.array([res['t'], *x_sph])
+        k4__mu = self.gi.get_metric().oneform(k4, x4)
+
+        #k_r, r, k_th, th, k_ph, ph, k_t = res.y
 
         # Get the four vectors
-        k4_mu_xyz, x4_mu_xyz = res.k4_xyz, res.x4_xyz
-        x3_mu_sph, k3_mu_sph = self.converter.convert_xyz_to_sph(x4_mu_xyz[1:], k4_mu_xyz[1:])
-        x4_mu_sph = np.array([x4_mu_xyz[0], *x3_mu_sph])
-        k4_mu_sph = np.array([k4_mu_xyz[0], *k3_mu_sph])
-        # Convert the 4vectors to oneforms
-        k__mu = self.ssm.oneform(k4_mu_sph, x4_mu_sph)
+        # k4_mu_xyz, x4_mu_xyz = res.k4_xyz, res.x4_xyz
+        # x3_mu_sph, k3_mu_sph = self.converter.convert_xyz_to_sph(x4_mu_xyz[1:], k4_mu_xyz[1:])
+        # x4_mu_sph = np.array([x4_mu_xyz[0], *x3_mu_sph])
+        # k4_mu_sph = np.array([k4_mu_xyz[0], *k3_mu_sph])
+        # # Convert the 4vectors to oneforms
+        # k__mu = self.ssm.oneform(k4_mu_sph, x4_mu_sph)
 
-        L = k__mu[3]
+        L = k4__mu[3]
         self.assertTrue( round(np.std(L),self.round_level) == 0.0 )
-        E = k__mu[0]
+        E = k4__mu[0]
         self.assertTrue( round(np.std(E),self.round_level) == 0.0 )
+
+    def test_SCHW_XYZ_check_conserved_quantities_photons(self):
+        self.gi = BlackholeGeodesicIntegrator(mass = self.mass, coordinates="xyz", time_like = False)
+
+        k0_sph = np.array([0.0, 0., -0.1]) 
+        x0_sph = np.array([3, 1/2*np.pi, 1/4*np.pi])
+        x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph)
+        k, x, res =  self.gi.geodesic(k0_xyz, x0_xyz, verbose=False, max_step=self.max_step)
+        k_t, k_x, k_y, k_z, _,_,_ = res.y
+        t = res.t
+
+        k_sph, x_sph = cart_to_sph1(k, x)
+        k4 = np.array([k_t, *k_sph])
+        x4 = np.array([t, *x_sph])
+        k4__mu = self.metric_sph.oneform(k4, x4)
+
+        L = k4__mu[3]
+        self.assertTrue( round(np.std(L),self.round_level) == 0.0 )
+        E = k4__mu[0]
+        self.assertTrue( round(np.std(E),self.round_level) == 0.0 )
+
 
 if __name__ == '__main__':
     unittest.main()

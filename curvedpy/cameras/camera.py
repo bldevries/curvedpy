@@ -221,7 +221,7 @@ class RelativisticCamera:
             if isinstance(self.results[i][2], list):
                 self.ray_blackhole_hit[y, x] = int(self.results[i][2][-1].hit_blackhole)
             else:
-                self.ray_blackhole_hit[y, x] = int(self.results[i][2].hit_blackhole)
+                self.ray_blackhole_hit[y, x] = int(self.results[i][2]["hit_blackhole"])
             k_xyz, x_xyz = self.results[i][0], self.results[i][1]
             #print("plplpl", x_xyz)
 
