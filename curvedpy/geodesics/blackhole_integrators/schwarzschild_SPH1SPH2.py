@@ -44,6 +44,7 @@ class GeodesicIntegratorSchwarzschildSPH1SPH2:
     #
     ################################################################################################
     def __init__(self, mass=1.0, time_like = False, theta_switch = 0.2*np.pi, eps_theta=0.0000001, verbose=False):
+        self.M = mass
         self.theta_switch = theta_switch
         self.metric = SchwarzschildMetricSpherical(mass=mass, eps_theta=eps_theta)
         self.verbose = verbose

@@ -50,6 +50,9 @@ class BlackholeGeodesicIntegrator:
     def get_r_s(self):
         return self.gi.r_s_value
 
+    def get_m(self):
+        return self.gi.M
+
     def get_metric(self):
         return self.gi.metric
 
