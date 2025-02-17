@@ -106,7 +106,7 @@ g_{\sigma \rho} =
 \end{bmatrix}
 $$
 
-The package curvedpy uses the Schwarzschild metric in cartesian or spherical coordinates. To learn more about the Schwarzschild metric, you can start with this [jupyter notebook](tutorials/The_math_and_physics_behind_curvedpy.ipynb). To learn more about how to solve geodesics in this spacetime, see this [tutorial](https://github.com/bldevries/curvedpy/blob/main/tutorials/Tutorial_1_calc_geodesic.ipynb)
+The package curvedpy uses the Schwarzschild metric in cartesian or spherical coordinates. 
 
 ### Numerically solving the geodesic equation
 For the code I have implemented I have used techniques from several peer-reviewed papers and books, among which:
@@ -131,8 +131,8 @@ $$
 \frac{d x^{\beta}}{d\lambda} = k^{\beta}
 $$
 
-Now we can integrate these equations (these are 8 equations since the indices can take on 4 values) if we have an initial condition for the location $x$ and the "velocity" $k$. Or in other words, we need to have a beginning location and direction of movement. The integration of the geodesic equation is done in the function ```calc_trajectory```.
+Now we can integrate these equations (these are 8 equations since the indices can take on 4 values) if we have an initial condition for the location $x$ and the "velocity" $k$. Or in other words, we need to have a beginning location and direction of movement. 
 
-
+To learn more about the metric, you can start with this [jupyter notebook](tutorials/The_math_and_physics_behind_curvedpy.ipynb). To learn more about how to solve geodesics in curved spacetime, see this [tutorial](https://github.com/bldevries/curvedpy/blob/main/tutorials/Tutorial_1_calc_geodesic.ipynb)
 
 
