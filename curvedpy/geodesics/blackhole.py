@@ -87,10 +87,10 @@ class BlackholeGeodesicIntegrator:
     ################################################################################################
     #
     ################################################################################################
-    def get_r_s(self):
-        """Return the radius of the black hole horizon."""
-
-        return self.gi.r_s_value
+    # def get_r_s(self):
+    #     """Return the radius of the black hole horizon."""
+        
+    #     return self.gi.metric.get_r_s()
 
     def get_m(self):
         """Return the mass of the black hole."""

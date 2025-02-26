@@ -79,6 +79,7 @@ class RelativisticCamera:
                         sampling_seed = 43,\
                         y_lim = [], x_lim = [],\
                         max_step = 1.0,\
+                        force_no_sampling = False,\
                         loadFromFile = "",\
                         verbose=True,\
                         verbose_integrator = False,\
@@ -99,6 +100,8 @@ class RelativisticCamera:
             y_lim -- (default [])
             x_lim -- (default [])
             max_step -- (default 1.0)
+            force_no_sampling -- (default False)
+            loadFromFile --
             verbose -- (default True)
             verbose_integrator -- (default False)
             verbose_init -- (default True)
@@ -134,6 +137,7 @@ class RelativisticCamera:
             self.dy = self.aspectratio/self.height  
             self.dx = 1/self.width  
 
+            self.force_no_sampling = force_no_sampling
             random.seed(sampling_seed)  
             self.sampling_seed = sampling_seed
             self.samples = samples
@@ -167,6 +171,7 @@ class RelativisticCamera:
             print(f"  - {self.width=}")
             print(f"  - {self.height=}")
             print(f"  - {field_of_view=}")
+            print(f"  - {self.force_no_sampling=}")
             print(f"  - {self.samples=}")
             print(f"  - {self.sampling_seed=}")
             print(f"  - {self.y_lim=}")
@@ -192,7 +197,7 @@ class RelativisticCamera:
 
     def cam_information_dict(self):
         """Internal use"""
-        
+
         return \
             {"version_curvedpy": cp.__version__, "M":self.M, "a":self.a, "camera_location": self.camera_location, \
             "camera_rotation_euler_props":self.camera_rotation_euler_props, \
@@ -201,7 +206,7 @@ class RelativisticCamera:
             "y_lim":self.y_lim, "x_lim":self.x_lim,\
             "samples":self.samples, "sampling_seed":self.sampling_seed, \
             "max_step":self.max_step,"coordinates":self.coordinates,\
-            "theta_switch":self.theta_switch\
+            "theta_switch":self.theta_switch, "force_no_sampling":self.force_no_sampling\
             }
     
     def store_info_dict(self, info):
@@ -229,6 +234,10 @@ class RelativisticCamera:
             self.theta_switch = info["theta_switch"]
         else:
             self.theta_switch = 0.1*np.pi
+        if "force_no_sampling" in info.keys():
+            self.force_no_sampling = info["force_no_sampling"]
+        else:
+            self.force_no_sampling = False
 
     def get_x_render(self, x):
         """Dont use this"""
@@ -244,7 +253,12 @@ class RelativisticCamera:
         """Dont use this"""
 
         #ray_direction = np.array( [ x_render, y_render, -1 ] )
-        ray_direction = np.array( [ x_render + self.dx*(random.random()-0.5), y_render + self.dy*(random.random()-0.5), -1 ] )
+        if self.force_no_sampling:
+            ranX, ranY = 0.5, 0.5
+        else:
+            ranX, ranY = random.random(), random.random()
+
+        ray_direction = np.array( [ x_render + self.dx*(ranX-0.5), y_render + self.dy*(ranY-0.5), -1 ] )
         # The ray direction relative to the camera
         ray_direction = self.camera_rotation_matrix @ ray_direction
         # Normalize the direction ray

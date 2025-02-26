@@ -103,7 +103,7 @@ class GeodesicIntegratorKerrSchildXYZ:
                         first_step = None,\
                         rtol = 1e-3,\
                         atol = 1e-6,\
-                        verbose = False \
+                        verbose = False, *args, **kargs \
                        ):
 
         # Calculate from norm of starting condition
