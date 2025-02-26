@@ -43,7 +43,7 @@ class GeodesicIntegratorSchwarzschildSPH1SPH2:
     ################################################################################################
     #
     ################################################################################################
-    def __init__(self, mass=1.0, time_like = False, theta_switch = 0.2*np.pi, eps_theta=0.0000001, verbose=False):
+    def __init__(self, mass=1.0, time_like = False, theta_switch = 0.1*np.pi, eps_theta=0.0000001, verbose=False):
         self.M = mass
         self.theta_switch = theta_switch
         self.metric = SchwarzschildMetricSpherical(mass=mass, eps_theta=eps_theta)
@@ -53,7 +53,7 @@ class GeodesicIntegratorSchwarzschildSPH1SPH2:
     #
     ################################################################################################
     # This function checks the shape of the parameters and if multiple photons need to be run
-    def calc_trajectory(self, k0_xyz, x0_xyz, *args, **kargs):
+    def calc_trajectory(self, k0_xyz, x0_xyz, full_save = False, *args, **kargs):
 
         if not isinstance(k0_xyz, np.ndarray): k0_xyz = np.array(k0_xyz)
         if not isinstance(x0_xyz, np.ndarray): x0_xyz = np.array(x0_xyz)
@@ -76,16 +76,16 @@ class GeodesicIntegratorSchwarzschildSPH1SPH2:
                 return
 
         if len(k0_xyz) == 1:
-            return self.calc_trajectory_2patch(k0_xyz[0], x0_xyz[0], *args, **kargs)
+            return self.calc_trajectory_2patch(k0_xyz[0], x0_xyz[0], full_save, *args, **kargs)
         else:
-            return [self.calc_trajectory_2patch(k0_xyz[i], x0_xyz[i], *args, **kargs) for i in range(len(x0_xyz))]
+            return [self.calc_trajectory_2patch(k0_xyz[i], x0_xyz[i], full_save, *args, **kargs) for i in range(len(x0_xyz))]
 
     
     ################################################################################################
     # 
     ################################################################################################
     # This function handles the switching between the different coordinate patches
-    def calc_trajectory_2patch(self, k0_xyz, x0_xyz, full_save = True, *args, **kargs):
+    def calc_trajectory_2patch(self, k0_xyz, x0_xyz, full_save = False, *args, **kargs):
         if not isinstance(x0_xyz,np.ndarray):
             x0_xyz = np.array(x0_xyz)
 
@@ -142,7 +142,7 @@ class GeodesicIntegratorSchwarzschildSPH1SPH2:
         # Now we will check if we need to integrate another piece or 
         # if we are done.
         nr_switches = 0
-        while res.stop_integration_coord_check and (not res.hit_blackhole) and nr_switches <=8:
+        while res.stop_integration_coord_check and (not res.hit_blackhole) and nr_switches <=4:
             # We start the next piece where the previous ended
             k_sph, x_sph = np.column_stack(k_sph_step), np.column_stack(x_sph_step)
             k0_sph, x0_sph = k_sph[-1], x_sph[-1]
@@ -194,10 +194,12 @@ class GeodesicIntegratorSchwarzschildSPH1SPH2:
 
         summary["t"] = merged_t
         summary["k_t"] = merged_k_t
-        # If the past piece hits the blackhole the geodesic ends there
+        # If the last piece hits the blackhole the geodesic ends there
         summary["hit_blackhole"] = res["hit_blackhole"] 
 
-        if full_save: summary["result_list"] = results_list
+        if full_save: 
+            print(" == Carefull, doing full saving in schwarzschild_SPH1SPH2.py. This results in huge files for debugging == ")
+            summary["result_list"] = results_list
 
         return merged_k_xyz, merged_x_xyz, summary
 
@@ -210,10 +212,10 @@ class GeodesicIntegratorSchwarzschildSPH1SPH2:
                         k0_sph, x0_sph, \
                         coord,\
                         use_t0_k_t_0 = False, t0=0.0, k_t_0=0.0,\
-                        R_end = -1,\
+                        R_end = 100,\
                         curve_start = 0, \
-                        curve_end = 50, \
-                        nr_points_curve = 50, \
+                        curve_end = 10000, \
+                        nr_points_curve = 5000, \
                         method = "RK45",\
                         max_step = np.inf,\
                         first_step = None,\

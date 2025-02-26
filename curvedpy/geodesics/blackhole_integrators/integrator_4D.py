@@ -48,6 +48,7 @@ class Integrator4D:
 
         if stop_integration:
             stop_integration.terminal = True
+            stop_integration.direction = +1
             events.append(stop_integration)
 
         if stop_integration_coord_check:
