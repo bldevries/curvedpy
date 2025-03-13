@@ -39,7 +39,7 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
     COLOR_SOLID_COLOR_SKY = np.array([0,0,0,1]) # Used for the sky when debugging or when no image is supplied
 
     TEX_KEY_SKYDOME = "skydome_tex_name"
-    TEX_KEY_SPHERE = "sphere_tex_name"
+    #TEX_KEY_SPHERE = "sphere_tex_name"
 
     verbose = True
     v_debug = False
@@ -52,8 +52,11 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
 
         # Curvedpy data file
         pkl_file = bpy.path.abspath(depsgraph.scene.pkl_file)
+        print(pkl_file)
         s_cp, curvedpy_data = self.loadAndCheckCurvedpyFile(pkl_file)
         if not s_cp: return
+
+        self.flat_space = depsgraph.scene.flat_space
 
         # Skydome texture
         sky_image_path = bpy.path.abspath(depsgraph.scene.sky_image)
@@ -62,10 +65,10 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
         texture_names = {self.TEX_KEY_SKYDOME: sky_tex_name}
 
         # Sphere texture
-        sphere_image_path = bpy.path.abspath(depsgraph.scene.sphere_image)
-        s_tex, sphere_tex_name = self.loadTextures(sphere_image_path)
-        if not s_tex: return
-        texture_names.update({self.TEX_KEY_SPHERE: sphere_tex_name})
+        # sphere_image_path = bpy.path.abspath(depsgraph.scene.sphere_image)
+        # s_tex, sphere_tex_name = self.loadTextures(sphere_image_path)
+        # #if not s_tex: return
+        # texture_names.update({self.TEX_KEY_SPHERE: sphere_tex_name})
 
         # Black hole location and object
         if depsgraph.scene.blackhole_obj == None:
@@ -149,7 +152,14 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
             # geodesic_cast gives a color or one geodesic. It checks if the geodesic hits
             # an object, the BH or goes into the background.
             #sbuf[iy, ix, 0:4] += (1/(s+1)) * self.geodesic_cast_debug(depsgraph, k_xyz, x_xyz, bh_hit, bh_loc, texture_names)
-            sbuf[iy, ix, 0:4] += (1/(s+1)) * self.geodesic_cast(depsgraph, k_xyz, x_xyz, bh_hit, bh_loc, texture_names)
+            if self.flat_space: # Act as if flat spacetime
+                if "M" in curvedpy_data[self.CP_DATA_INFO].keys():
+                    M = curvedpy_data[self.CP_DATA_INFO]["M"]
+                else:
+                    M = 1
+                sbuf[iy, ix, 0:4] += (1/(s+1)) * self.straight_line_cast(depsgraph, k_xyz, x_xyz, bh_hit, bh_loc, texture_names, M)
+            else: # Use geodesics
+                sbuf[iy, ix, 0:4] += (1/(s+1)) * self.geodesic_cast(depsgraph, k_xyz, x_xyz, bh_hit, bh_loc, texture_names)
 
 
             #return
@@ -166,6 +176,40 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
         # print(np.min(length), np.max(length), np.mean(length), np.std(length))
         # length = length/np.max(length)
         return np.array([length,length,length, 1])
+
+
+    # ------------------------------
+    def straight_line_cast(self, depsgraph, k_xyz, x_xyz, hit_blackhole, bh_loc, texture_names, M):
+    # ------------------------------
+        ray_origin, ray_direction = x_xyz[0], k_xyz[0]
+
+        hit, loc_hit, normal_hit, index_hit, ob_hit, mat_hit = \
+            depsgraph.scene.ray_cast(depsgraph, ray_origin, ray_direction)#, distance=distance)
+        
+        impact_vector = ray_origin - ray_origin.dot(ray_direction)*ray_direction
+        # We save the length of the impact_vector. This is called the impact parameter in
+        # scattering problems
+        impact_par = np.linalg.norm(impact_vector)
+
+        hit_blackhole = impact_par <= 2*M
+        
+        if hit:
+            # In this case the geodesic hits an object in the scene
+            hit_info = {"loc_hit":loc_hit, "normal_hit": normal_hit, "index_poly_hit":index_hit, \
+                        "ob_hit":ob_hit, "mat_hit":mat_hit}
+
+            print(np.array(ray_origin)-np.array(bh_loc))
+            print(loc_hit)
+            if hit_blackhole and (np.linalg.norm(np.array(ray_origin)-np.array(bh_loc))-2*M < np.linalg.norm(np.array(ray_origin)-np.array(loc_hit))): 
+            # This is not exactly right but will be fine if things do not get close to the horizon
+                return self.COLOR_BH
+            else:
+                return self.handleObjectHit(hit_info, texture_names)
+        elif hit_blackhole:
+            return self.COLOR_BH
+        else:
+            return self.handleBackgroundHit(k_xyz[0], texture_names)
+        return self.COLOR_UNDEF_PIXEL
 
     # ------------------------------
     def geodesic_cast(self, depsgraph, k_xyz, x_xyz, hit_blackhole, bh_loc, texture_names):
@@ -341,24 +385,24 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
         
         return rgb
 
-    # ------------------------------
-    def sphereObjectHitColor(self, loc, ob, texture_names):
-    # ------------------------------
-        hit_norm = loc-ob.matrix_world.translation#ob.location
-        hit_norm = hit_norm/np.linalg.norm(hit_norm)
-        th = np.arccos(hit_norm[2])
-        #ph = np.arctan(hit_norm[1]/hit_norm[0])
-        ph = np.atan2(hit_norm[1],hit_norm[0])+np.pi
+    # # ------------------------------
+    # def sphereObjectHitColor(self, loc, ob, texture_names):
+    # # ------------------------------
+    #     hit_norm = loc-ob.matrix_world.translation#ob.location
+    #     hit_norm = hit_norm/np.linalg.norm(hit_norm)
+    #     th = np.arccos(hit_norm[2])
+    #     #ph = np.arctan(hit_norm[1]/hit_norm[0])
+    #     ph = np.atan2(hit_norm[1],hit_norm[0])+np.pi
 
-        #color=np.array([1, 0, 0])
-        print(th, ph, loc, ob.location)
-        color = np.array(
-            [*bpy.data.textures[texture_names[self.TEX_KEY_SPHERE]].evaluate((ph/(2*np.pi),th/np.pi,0)).xyz, 1]
-            )
-        # color = np.array(
-        # [*bpy.data.textures[texture_names[self.TEX_KEY_SKYDOME]].evaluate( (-phi,2*theta-1,0) ).xyz,1]
-        # )
-        return color
+    #     #color=np.array([1, 0, 0])
+    #     print(th, ph, loc, ob.location)
+    #     color = np.array(
+    #         [*bpy.data.textures[texture_names[self.TEX_KEY_SPHERE]].evaluate((ph/(2*np.pi),th/np.pi,0)).xyz, 1]
+    #         )
+    #     # color = np.array(
+    #     # [*bpy.data.textures[texture_names[self.TEX_KEY_SKYDOME]].evaluate( (-phi,2*theta-1,0) ).xyz,1]
+    #     # )
+    #     return color
 
     # ------------------------------
     def handleBackgroundHit(self, direction, texture_names):
@@ -446,7 +490,7 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
                 return True, check, filecontent
 
         else:
-            if v_debug: print(f"CAM: FILE NOT FOUND {filepath}")
+            if self.v_debug: print(f"CAM: FILE NOT FOUND {filepath}")
             return False, False, {}
 
 
@@ -479,17 +523,19 @@ class CUSTOM_RENDER_PT_blackhole(RenderButtonsPanel, Panel):
   
         col = split.column()  
         col.row().prop(rd, "blackhole_obj", text="Blackhole")#, expand=True)  
+        col.row().prop(rd, "flat_space", text="Flat space")#, expand=True)  
         col.row().prop(rd, "pkl_file", text="pkl_file")
         col.row().prop(rd, "sky_image", text="Sky image")
-        col.row().prop(rd, "sphere_image", text="Sphere image")
+        #col.row().prop(rd, "sphere_image", text="Sphere image")
 
 
 
 PROPS = [
      ('blackhole_obj', bpy.props.PointerProperty(name='blackhole_obj', type=bpy.types.Object)),
+     ('flat_space', bpy.props.BoolProperty(name='flat_space', default=False)),
      ('pkl_file', bpy.props.StringProperty(name='pkl_file', default="", subtype="FILE_PATH")),
      ('sky_image', bpy.props.StringProperty(name='sky_image', default="", subtype="FILE_PATH")),
-     ('sphere_image', bpy.props.StringProperty(name='sphere_image', default="", subtype="FILE_PATH")),
+     #('sphere_image', bpy.props.StringProperty(name='sphere_image', default="", subtype="FILE_PATH")),
  ]
 
 
