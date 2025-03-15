@@ -86,6 +86,7 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
         if self.is_preview:  # we might differentiate later
             pass             # for now ignore completely
         else:
+            if self.verbose: print("STARTING RENDER")
             self.render_scene(depsgraph, curvedpy_data, texture_names, bh_loc)
 
 
@@ -97,7 +98,9 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
         res_x = curvedpy_data[self.CP_DATA_INFO]["width"]
 
         buf = np.ones(res_x*res_y*4)
-        buf.shape = res_y,res_x,4
+        buf.shape = res_x, res_y, 4
+        #buf.shape = res_y,res_x,4
+
 
         # Here we write the pixel values to the RenderResult
         result = self.begin_result(0, 0, res_x, res_y)
@@ -130,14 +133,15 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
         height = curvedpy_data[self.CP_DATA_INFO]["height"]
         width = curvedpy_data[self.CP_DATA_INFO]["width"]
 
-
+        if self.verbose: print(f"IN RAYTRACE: {height=}, {width=}")
 
         # Buffer for the sample?
         sbuf = np.zeros(width*height*4)  
         sbuf.shape = height,width,4
     
         for i in range(len(curvedpy_data[self.CP_DATA_PIXELS])):
-            if i%10000 == 0: print("Pixel progress: ", i, len(curvedpy_data[self.CP_DATA_PIXELS]))
+            if self.verbose:
+                if i%1000 == 0: print("  - Pixel progress: ", i, len(curvedpy_data[self.CP_DATA_PIXELS]))
 
             # If you need, get the camera coordinates:
             iy, ix, s = curvedpy_data[self.CP_DATA_PIXELS][i]
@@ -426,7 +430,7 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
     def loadTextures(self, sky_image_path):
     # ------------------------------
         if not os.path.isfile(sky_image_path):
-            print(f"=== FAIL: Texture file not found: {sky_image_path} ===")
+            print(f"=== NO SKYMAP SUPPLIED, CONTINUING ===")
             return False, ""
 
         # Skydome image and texture
