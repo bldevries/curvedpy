@@ -17,6 +17,9 @@ This python package is written to accompany the <a href="https://github.com/blde
 <div align="center">
 <img src="images/blackhole_banner.gif" alt="" width="720" height="auto">
 </div>
+<div align="center">
+<sub><sup>A Schwarzschild black hole moving sideways, warping a skydome image of stars as it goes</sup></sub>
+</div>
 
 ## Using curvedpy
 If you find curvedpy usefull and use it in your projects, please give me credit by mentioning this repo!
