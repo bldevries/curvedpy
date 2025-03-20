@@ -7,7 +7,7 @@ Author: <a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de V
 <div align="center">
 <img src="images/rotsun_bl_almosts10_rev_crop_bg.gif" alt="" width="720" height="auto">
 </div>
-<div align="center">(*A star-like object (textured mesh in Blender) in orbit around a Schwarzschild black hole*)</div>
+<div align="center"><small>A star-like object (textured mesh in Blender) in orbit around a Schwarzschild black hole</small></div>
 
 
 <div align="center">
