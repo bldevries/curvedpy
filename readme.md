@@ -2,7 +2,7 @@
 <h1 align="center">Curvedpy </h1>
 <p align="center"><b>- a general relativity toolkit -</b></p>
 <div align="center">
-<img src="images/rotsun_bl_almosts10_rev_crop.gif" alt="" width="720" height="auto">
+<img src="images/rotsun_bl_almosts10_rev_crop_bg.gif" alt="" width="720" height="auto">
 </div>
 
 <p align="center">
