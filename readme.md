@@ -3,6 +3,7 @@
 <p align="center"><b>- a general relativity toolkit -</b></p>
 <div align="center">
 <img src="images/rotsun_bl_almosts10_rev_crop_bg.gif" alt="" width="720" height="auto">
+*A star-like object (textured mesh in Blender) in orbit around a Schwarzschild black hole*
 </div>
 
 <p align="center">
