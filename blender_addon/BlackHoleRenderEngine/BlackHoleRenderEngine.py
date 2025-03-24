@@ -56,6 +56,9 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
         s_cp, curvedpy_data = self.loadAndCheckCurvedpyFile(pkl_file)
         if not s_cp: return
 
+        bpy.data.scenes["Scene"].render.resolution_x = curvedpy_data[self.CP_DATA_INFO]["width"]
+        bpy.data.scenes["Scene"].render.resolution_y = curvedpy_data[self.CP_DATA_INFO]["height"]
+
         self.flat_space = depsgraph.scene.flat_space
 
         # Skydome texture
@@ -90,7 +93,6 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
             self.render_scene(depsgraph, curvedpy_data, texture_names, bh_loc)
 
 
-
     # ------------------------------
     def render_scene(self, depsgraph, curvedpy_data, texture_names, bh_loc):
     # ------------------------------
@@ -105,6 +107,7 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
         # Here we write the pixel values to the RenderResult
         result = self.begin_result(0, 0, res_x, res_y)
         layer = result.layers[0].passes["Combined"]
+
 
         # if self.pkl_file == "":
         #     print(f"=== Life rendering ===")
@@ -121,6 +124,12 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
         # Here we write the pixel values to the RenderResult
         result = self.begin_result(0, 0, res_x, res_y)
         layer = result.layers[0].passes["Combined"]
+
+        print(type(layer))
+        print(type(result))
+        print(result.layers[0])
+
+
 
         layer.rect = buf.tolist()  
 
@@ -141,7 +150,7 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
     
         for i in range(len(curvedpy_data[self.CP_DATA_PIXELS])):
             if self.verbose:
-                if i%1000 == 0: print("  - Pixel progress: ", i, len(curvedpy_data[self.CP_DATA_PIXELS]))
+                if i%10000 == 0: print("  - Pixel progress: ", i, len(curvedpy_data[self.CP_DATA_PIXELS]))
 
             # If you need, get the camera coordinates:
             iy, ix, s = curvedpy_data[self.CP_DATA_PIXELS][i]
@@ -163,12 +172,15 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
                     M = 1
                 sbuf[iy, ix, 0:4] += (1/(s+1)) * self.straight_line_cast(depsgraph, k_xyz, x_xyz, bh_hit, bh_loc, texture_names, M)
             else: # Use geodesics
-                sbuf[iy, ix, 0:4] += (1/(s+1)) * self.geodesic_cast(depsgraph, k_xyz, x_xyz, bh_hit, bh_loc, texture_names)
+                c = self.geodesic_cast(depsgraph, k_xyz, x_xyz, bh_hit, bh_loc, texture_names)
+                #c[0:3] = c[0:3]*255 
+                sbuf[iy, ix, 0:4] += (1/(s+1)) * c
+                #if self.verbose: print(f"Sampling used to norm: {s} -- {sbuf[iy, ix, 0:4]} -- {c}")
 
 
             #return
         
-        #sbuf[:,:,0:3] = sbuf[:,:,0:3]/np.max(sbuf[:,:,0:3])
+        sbuf[:,:,0:3] = sbuf[:,:,0:3]/np.max(sbuf[:,:,0:3])
         buf = sbuf
         buf.shape = -1,4
         return buf
@@ -368,9 +380,13 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
         # We get the image from the node tree
         if ob_hit.name in self.object_texture_array_buffer.keys():
             pixels = self.object_texture_array_buffer[ob_hit.name]
+            #tex = self.object_texture_array_buffer[ob_hit.name+"_tex"]
             height, width = pixels.shape[0],pixels.shape[1]
         else:
             image = ob_hit.material_slots[0].material.node_tree.nodes['Image Texture'].image
+            #tex = bpy.data.textures.new(image.name+"_texture", "IMAGE")
+            #tex.image = bpy.data.images[image.name]
+
             # We get the pixels as array and get the width and height of the image to resize the
             # numpy array
             pixels = np.array( image.pixels ) #Faster than accessible image.pixels[x] each time
@@ -379,13 +395,25 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
             pixels = np.reshape(pixels, (height,width,4))
             # Save it in the buffer for next hit
             self.object_texture_array_buffer.update({ob_hit.name: pixels})
+            #self.object_texture_array_buffer.update({ob_hit.name+"_tex": tex})
+
+        # uv_x, uv_y = loc_hit_bar
+        # tex_color = tex.evaluate((uv_y, uv_x, 0))
+        # tex_color[3] = 1.
+
 
         # Then we get the color from the image using our coordinates
-        uv_x = round(loc_hit_bar[0]*(width-1))
-        uv_y = round(loc_hit_bar[1]*(height-1))
+        uv_x_im = round(loc_hit_bar[0]*(width-1))
+        uv_y_im = round(loc_hit_bar[1]*(height-1))
+        srgb = pixels[uv_y_im,uv_x_im,:]
 
-        rgb = pixels[uv_y,uv_x,:]
-        if verbose: print("RGB IMG: ", rgb*255, uv_y, uv_x)
+        # File colors are in srgb, while blender work with linear rgb
+        _ = self.srgb_to_linear(*srgb[0:3])
+        rgb = srgb
+        rgb[0:3] = _
+        rgb[3] = 1.
+
+        if self.verbose: print("RGB IMG: ", rgb, uv_y_im, uv_x_im)
         
         return rgb
 
@@ -497,6 +525,26 @@ class BlackHoleRenderEngine(bpy.types.RenderEngine):
             if self.v_debug: print(f"CAM: FILE NOT FOUND {filepath}")
             return False, False, {}
 
+    # ------------------------------
+    def srgb_to_linear(self, r, g, b):
+    # ------------------------------
+        def srgb(c):
+            a = .055
+            if c <= .04045:
+                return c / 12.92
+            else:
+                return ((c+a) / (1+a)) ** 2.4
+        return tuple(srgb(c) for c in (r, g, b))
+    # ------------------------------
+    def linear_to_srgb(self, r, g, b):
+    # ------------------------------
+        def linear(c):
+            a = .055
+            if c <= .0031308:
+                return 12.92 * c
+            else:
+                return (1+a) * c**(1/2.4) - a
+        return tuple(linear(c) for c in (r, g, b))
 
 ########################################################
 # END BlackHoleRenderEngine
