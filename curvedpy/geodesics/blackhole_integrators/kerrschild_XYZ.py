@@ -45,11 +45,14 @@ class GeodesicIntegratorKerrSchildXYZ:
         self.M = mass
         self.a = a
 
+        if self.a >= self.M:
+            print("THIS WILL GO WRONG: a > M in kerrschild_XYZ")
+
         # Type of geodesic
         self.time_like = time_like # No Massive particle geodesics yet
         self.verbose = verbose
         if verbose:
-            print("Geodesic SS Integrator Settings: ")
+            print("Geodesic KS Integrator Settings: ")
             print(f"  - {self.M=}")
             print(f"  - {self.a=}")
             print(f"  - {self.time_like=}")
@@ -178,8 +181,8 @@ class GeodesicIntegratorKerrSchildXYZ:
             return k3, x3, result
 
         else:
-            if verbose: print("Starting location inside the blackhole.")
+            if self.verbose: print("Starting location inside the blackhole.")
             result = {"start_inside_hole": True}
 
-            return result
+            return [], [], result
 

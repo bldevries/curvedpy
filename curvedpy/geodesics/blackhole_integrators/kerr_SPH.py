@@ -35,7 +35,8 @@ class GeodesicIntegratorKerr:
             return g_sigma_mu_nu
 
         self.M = mass
-        self.r_s_value = 2*self.M 
+        self.r_s_value = 2*self.M  #
+        self.r_plus = mass + np.sqrt(mass**2 - a**2) #
         self.a_value = a # Remember that most of the time we integrate backwards in time and the rotation of the blackhole is reversed!
 
         # Type of geodesic
@@ -316,7 +317,7 @@ class GeodesicIntegratorKerr:
         elif R_end < r0:
             R_end = r0*1.01
 
-        if r0 > self.r_s_value:
+        if r0 > self.r_plus:
             # Step function needed for solve_ivp
             def step(lamb, new):
 

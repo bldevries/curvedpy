@@ -125,7 +125,9 @@ class RelativisticCamera:
             self.field_of_view = field_of_view
             self.field_of_view_x, self.field_of_view_y = self.field_of_view
 
-            self.height, self.width = resolution
+            self.width, self.height = resolution
+            #self.height, self.width = resolution CHANGED ON 15MAR25
+
 
             if len(y_lim) == 0: self.y_lim = [0, self.height]
             else: self.y_lim = y_lim

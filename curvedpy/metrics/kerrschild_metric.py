@@ -11,6 +11,8 @@ from curvedpy.utils.stringified_equations import KerrSchildStrings
 from sympy.parsing.sympy_parser import parse_expr
 
 from curvedpy.utils.conversions_4D import Conversions4D
+from curvedpy.utils.conversions import Conversions
+
 from scipy.optimize import fsolve
 
 
@@ -26,6 +28,8 @@ class KerrSchildMetricXYZ:
 ################################################################################################
 
     conversions4D = Conversions4D()
+    conversions = Conversions()
+
 
     ################################################################################################
     # INIT
@@ -56,6 +60,13 @@ class KerrSchildMetricXYZ:
     #
     ################################################################################################
     def check_horizin(self, x, y, z):
+        rH = self.mass+ np.sqrt(self.mass**2 - self.a**2)
+
+        # This could be another way to determine if we hit the horizon
+        # rIt = self.conversions.coord_conversion_xyz_bl(x, y, z, self.a)[0]
+        # return rIt - (rH+0.000001)
+        
+        # This is the equation given by Visser
         # See Visser 2008 page 28 (eq 126)
         return x**2 + y**2 + (2*self.mass/self.r_plus) * z**2 - 2*self.mass*self.r_plus
 
