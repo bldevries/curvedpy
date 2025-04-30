@@ -9,7 +9,7 @@ from scipy.interpolate import splev, splprep
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.splev.html#scipy.interpolate.splev
 class Curve:
 	def __init__(self, t, x, y, z, k=3, verbose=False):
-		self.tck, u = splprep([x, y, z], u=t, k=5)
+		self.tck, u = splprep([x, y, z], u=t, k=k)
 
 	def get(self, t):
 		x, y, z = splev(t, self.tck)
