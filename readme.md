@@ -23,6 +23,7 @@ This python package is written to accompany the <a href="https://github.com/blde
 
 ## Linked repositories:
 - Geodesic approximations: https://github.com/bldevries/curvedApproxPy
+- Black Hole Render Engine for Blender: https://github.com/bldevries/BlackHoleRenderEngine
 
 ## Using curvedpy
 If you find curvedpy usefull and use it in your projects, please give me credit by mentioning this repo!
