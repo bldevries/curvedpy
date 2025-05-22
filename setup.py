@@ -3,7 +3,7 @@
 
 from setuptools import setup, find_packages
 
-VERSION = '0.0.4a1'
+VERSION = '0.0.4a2'
 DESCRIPTION = 'General Relativistic Geodesic Integrator'
 LONG_DESCRIPTION = 'Curvedpy can be used to calculate geodesics (trajectories) for different metrics and for both photons and massive particles.'
 
@@ -17,7 +17,7 @@ setup(
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         packages=find_packages(),
-        install_requires=["numpy>=2.0.2", "scipy>=1.13.1", "sympy>=1.13.3", "multiprocess>=0.70.17"], # add any additional packages that 
+        install_requires=["numpy>=2.0.2", "scipy>=1.13.1", "sympy>=1.13.3", "multiprocess>=0.70.17", "Pillow"], # add any additional packages that 
         license = " GPL-3.0",
         # needs to be installed along with your package. Eg: 'caer'
         url= "https://github.com/bldevries/curvedpy",
