@@ -11,7 +11,7 @@ Author: <a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de V
 </div>
 
 ## Introduction
-This python package is written to accompany the <a href="https://github.com/bldevries/blackhole_geodesic_calculator" target="_blank">relativistic render engine</a> I developed for Blender. But this package can be used for other projects just as well. It aims to calculate geodesics (trajectories) of massive particles and photons in curved space-time (different metrics). As of now (4 Dec 2024) the Schwarzschild metric (a spherically symmetric blackhole) is implemented. The Kerr blackhole (a rotating blackhole) will follow soon and is in developement. In the following sections I will explain how to install and use this package as well as some background information on how it works.
+This python package is written to accompany the Black Hole Render Engine for Blender. But this package can be used for other projects just as well. It calculates geodesics (trajectories) of massive particles and photons in curved space-time (different metrics). Both the Schwarzschild and Kerr metric is implemented. 
 
 <div align="center">
 <img src="images/blackhole_banner.gif" alt="" width="720" height="auto">
@@ -114,8 +114,6 @@ g_{\sigma \rho} =
 0 & 0 & 0 & r^2 \sin^2(\theta)
 \end{bmatrix}
 $$
-
-The package curvedpy uses the Schwarzschild metric in cartesian or spherical coordinates. 
 
 ### Numerically solving the geodesic equation
 For the code I have implemented I have used techniques from several peer-reviewed papers and books, among which:
