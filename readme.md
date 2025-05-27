@@ -29,11 +29,14 @@ This python package is written to accompany the Black Hole Render Engine for Ble
 If you find curvedpy usefull and use it in your projects, please give me credit by mentioning this repo!
 
 ## Installation
-Just install from pip from this in your preferred environment:
+Just install from pip from this in your preferred environment.
+I need to upload a new version to pypi, for now install directly from github:
+<b> pip install git+https://github.com/bldevries/curvedpy</b>
 
+I will fix things so that this will give you the proper version again:
 <i>pip install curvedpy</i>
 
-The dependencies are few, most notably it uses <a href="https://www.sympy.org/en/index.html" target="_blank">sympy</a>.
+The dependencies are few, most notably it uses <a href="https://www.sympy.org/en/index.html" target="_blank">sympy</a>, numpy, scipy and pillow.
 
 ## Tutorials
 For the basics on how to use the package, see this [notebook](https://github.com/bldevries/curvedpy/blob/main/tutorials/Tutorial_1_calc_geodesic.ipynb)
