@@ -4,6 +4,10 @@ from curvedpy.geodesics.blackhole_integrators.schwarzschild_XYZ import GeodesicI
 from curvedpy.geodesics.blackhole_integrators.kerrschild_XYZ import GeodesicIntegratorKerrSchildXYZ
 from curvedpy.geodesics.blackhole_integrators.schwarzschild_SPH1SPH2 import GeodesicIntegratorSchwarzschildSPH1SPH2
 
+# 29/05/2025: This will be de definitive SS integrator based on lpn coordinates in the th=1/2pi plane.
+from curvedpy.geodesics.blackhole_integrators.schwarzschild.schwarzschild_geodesic import IntegratorSchwarzschildSPH2D
+
+
 
 class BlackholeGeodesicIntegrator:
     """
@@ -29,7 +33,7 @@ class BlackholeGeodesicIntegrator:
     ################################################################################################
     #
     ################################################################################################
-    def __init__(self, mass=1.0, a = 0, time_like = False, coordinates = "SPH2PATCH", theta_switch = 0.1*np.pi, verbose=False):
+    def __init__(self, mass=1.0, a = 0, time_like = False, coordinates = "lpn", theta_switch = 0.1*np.pi, verbose=False):
         """
         Initialize a class to represent different black hole geodesic integrators as one object.
 
@@ -51,13 +55,16 @@ class BlackholeGeodesicIntegrator:
         """
 
         if a == 0:
-            if coordinates == "xyz":
-                if verbose: print("Running Schwarzschild integrator in XYZ coords")
+            if coordinates == "lpn":
+                if verbose: print("Running Schwarzschild integrator in LPN coords.")
+                self.gi = IntegratorSchwarzschildSPH2D(mass=mass, time_like=time_like, verbose = verbose)
+            elif coordinates == "xyz": # ONLY FOR TESTING
+                if verbose: print("Running Schwarzschild integrator in XYZ coords. Only for testing.")
                 self.gi = GeodesicIntegratorSchwarzschildXYZ(mass=mass, time_like=time_like, verbose = verbose)
-            elif coordinates == "SPH2PATCH":
-                if verbose: print("Running Schwarzschild integrator in SPH1SPH2 coords")
+            elif coordinates == "SPH2PATCH": # ONLY FOR TESTING
+                if verbose: print("Running Schwarzschild integrator in SPH1SPH2 coords. Only for testing.")
                 self.gi = GeodesicIntegratorSchwarzschildSPH1SPH2(mass=mass, theta_switch = theta_switch, time_like=time_like, verbose = verbose)
-            elif coordinates == "SPH": 
+            elif coordinates == "SPH": # ONLY FOR TESTING
                 self.gi = GeodesicIntegratorSchwarzschildSPH1SPH2(mass=mass, theta_switch = theta_switch, time_like=time_like, verbose = verbose)
             else:
                 print("NO INTEGRATOR SELECTED")
