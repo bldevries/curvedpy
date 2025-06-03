@@ -112,7 +112,7 @@ class Conversions:
         r = np.sqrt(x**2 + y**2 + z**2)
         th = np.acos(z/r)
         ph = np.atan2(y, x) #ph = np.atan(y/x)
-        return r, th, ph
+        return np.array([r, th, ph])
 
     ##################################################################
     # BOYER-LINDQUIST - XYZ
@@ -127,7 +127,7 @@ class Conversions:
         x = np.sqrt(r**2 + a**2) * np.sin(th) * np.cos(ph)
         y = np.sqrt(r**2 + a**2) * np.sin(th) * np.sin(ph)
         z = r * np.cos(th)
-        return x, y, z
+        return np.array([x, y, z])
 
     ##################################################################
     # XYZ - BOYER-LINDQUIST
@@ -144,7 +144,7 @@ class Conversions:
         r = (1/np.sqrt(2)) * np.sqrt(np.sqrt(z**4 + 2 * y**2 * z**2 + 2*x**2 * z**2 + 2*a**2 * z**2 + y**4 + 2*x**2*y**2 - 2*a**2*y**2 + x**4 - 2*a**2*x**2 + a**4) +x**2+y**2+z**2-a**2)
         th = np.acos(z/r)
         ph = np.atan2(y,x)
-        return r, th, ph
+        return np.array([r, th, ph])
 
     ####################################################
     # Sympy based functions

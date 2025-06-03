@@ -132,7 +132,7 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         x0_sph = np.array([3, 1/2*np.pi, 1/4*np.pi])
 
         x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph)
-        k, x, res =  self.gi.geodesic(k0_xyz, x0_xyz, verbose=False, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
+        k, x, res =  self.gi.geodesic(k0_xyz, x0_xyz, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
 
         # k_sph, x_sph = cart_to_sph1(k, x)
         # k4 = np.array([res['k_t'], *k_sph])
@@ -140,12 +140,17 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
         k4 = res['k4_sph']
         x4 = res['x4_sph']
 
+        x_th = x4[2]
+
         k4__mu = self.gi.get_metric().oneform(k4, x4)
         L = k4__mu[3]
         E = k4__mu[0]
 
         self.assertTrue( round(np.std(L),self.round_level) == 0.0 )
         self.assertTrue( round(np.std(E),self.round_level) == 0.0 )
+
+        # Check if in SPH coordinates it stays in the th=1/2pi surface
+        self.assertTrue( round(np.std(x_th),self.round_level) == 0.0 )
 
     # def test_SCHW_SPH_check_conserved_quantities_massive_particles(self):
     #     self.gi = BlackholeGeodesicIntegrator(mass = self.mass, time_like = True)#coordinates="SPH2PATCH", 

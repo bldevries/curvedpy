@@ -1,14 +1,10 @@
 import sympy as sp
 import numpy as np
-#from scipy.integrate import solve_ivp
 from scipy.optimize import fsolve
+from scipy.integrate import solve_ivp
 import time
+
 from curvedpy.utils.conversions import Conversions
-
-from curvedpy.geodesics.blackhole_integrators.schwarzschild.integrator_4D import Integrator4D
-from curvedpy.geodesics.blackhole_integrators.schwarzschild.schwarzschild_metric import SchwarzschildMetricSpherical
-
-# from curvedpy.utils.conversions_4D import Conversions4D
 
 # -------------------------------
 # ----NAMING CONVENTIONS USED----
@@ -39,71 +35,30 @@ from curvedpy.geodesics.blackhole_integrators.schwarzschild.schwarzschild_metric
 class IntegratorSchwarzschildSPH2D:
 
     conversions = Conversions()
-    integrator = Integrator4D()
 
 
     ################################################################################################
     #
     ################################################################################################
-    def __init__(self, mass=1.0, time_like = False, eps_theta=0.0000001, verbose=False):
+    def __init__(self, mass=1.0, time_like = False, verbose=False):
         self.metric = SchwarzschildMetricSpherical2D(mass=mass)
+        self.integrator = Integrator4D()
+
         self.lpnCoords = LPN_coordinates()
 
         self.M = mass
         self.a_value = 0.0
 
-    # def geodesic(self, k0_xyz, x0_xyz):
-    #     if not isinstance(k0_xyz, np.ndarray): k0_xyz = np.array(k0_xyz)
-    #     if not isinstance(x0_xyz, np.ndarray): x0_xyz = np.array(x0_xyz)
-    #     if k0_xyz.shape != x0_xyz.shape:
-    #         print("k and x are not the same shape")
-    #         return
-    #     if k0_xyz.ndim == 1:
-    #         if k0_xyz.shape[0] != 3 or x0_xyz.shape[0] != 3:
-    #             print("k or x do not have 3 components")
-    #             return
-    #         k0_xyz = k0_xyz.reshape(1,3)
-    #         x0_xyz = x0_xyz.reshape(1,3)
-
-    #     else:
-    #         if k0_xyz.shape[1] != 3 or x0_xyz.shape[1] != 3:
-    #             print("k or x do not have 3 components")
-    #             return
-
-
-
-        #k0_lp = np.array([1, 0]).T
-
-        # k0_sph2, x0_sph2 = self.lpnCoords.lp_to_sph2(x0_lp)
-
-        # k_lp, x_lp = self.lpnCoords.sph2_to_lp(k0_sph2, x0_sph2)
-
-        # If p==0 we have a singular transformation matrix, since the 
-        # basis vector for p is arbitrary and not restricted. This is when the
-        # ray is directed precisely at the center of the BH
-        # l==0 is no problem, since we take the direction k of the ray 
-        # to define the unit vector in the l direction
-        # if np.any((x0_lp.T)[1] == 0.0): print("SINGULAR", (x0_lp.T)[1] == 0.0)
-
-
-        # print()
-        # print()
-        # print("x_lp", x_lp)
-        # print()
-
-        # print()
-        # r, phi = x0_sph2.T
-        # print("x0_sph2", r, phi/np.pi)
-        # print()
-
-#        self.lpnCoords.matrix_conversion_lpn_xyz(*self.lpnCoords.unit_vectors_lpn(x0_xyz, k0_xyz))
+        self.verbose = verbose
 
 
     ################################################################################################
     #
     ################################################################################################
-    def calc_trajectory(self, k0_xyz, x0_xyz, *args, **kargs):
-        #mp_on = False
+    def calc_trajectory(self,   k0_xyz, x0_xyz, \
+                                R_end, curve_start, curve_end, nr_points_curve, \
+                                max_step, first_step,\
+                        ):
 
         if not isinstance(k0_xyz, np.ndarray): k0_xyz = np.array(k0_xyz)
         if not isinstance(x0_xyz, np.ndarray): x0_xyz = np.array(x0_xyz)
@@ -126,26 +81,32 @@ class IntegratorSchwarzschildSPH2D:
                 return
 
         if len(k0_xyz) == 1:
-            return self.calc_trajectory_xyz(k0_xyz[0], x0_xyz[0], *args, **kargs)
+            return self.calc_trajectory_xyz(k0_xyz[0], x0_xyz[0], R_end,\
+                        curve_start, \
+                        curve_end, \
+                        nr_points_curve, \
+                        max_step,\
+                        first_step)
         else:
-            return [self.calc_trajectory_xyz(k0_xyz[i], x0_xyz[i], *args, **kargs) for i in range(len(x0_xyz))]
+            return [self.calc_trajectory_xyz(k0_xyz[i], x0_xyz[i],R_end,\
+                        curve_start, \
+                        curve_end, \
+                        nr_points_curve, \
+                        max_step,\
+                        first_step) for i in range(len(x0_xyz))]
 
 
     ################################################################################################
     #
     ################################################################################################
     def calc_trajectory_xyz(self, \
-                        k0_xyz = np.array([1, 0.0, 0.0]), x0_xyz = np.array([-10, 10, 0]), \
-                        R_end = -1,\
-                        curve_start = 0, \
-                        curve_end = 50, \
-                        nr_points_curve = 50, \
-                        method = "RK45",\
-                        max_step = np.inf,\
-                        first_step = None,\
-                        rtol = 1e-3,\
-                        atol = 1e-6,\
-                        verbose = False \
+                        k0_xyz, x0_xyz, \
+                        R_end,\
+                        curve_start, \
+                        curve_end, \
+                        nr_points_curve, \
+                        max_step,\
+                        first_step,\
                        ):
 
         if not isinstance(x0_xyz,np.ndarray):
@@ -154,51 +115,32 @@ class IntegratorSchwarzschildSPH2D:
         if not isinstance(k0_xyz,np.ndarray):
             k0_xyz = np.array(k0_xyz)
 
-
+        # If p==0 (better x.dot(k)==0) we have a singular transformation matrix, since the 
+        # basis vector for p is arbitrary and not restricted. This is when the
+        # ray is directed precisely at the center of the BH
+        # l==0 is no problem, since we take the direction k of the ray 
+        # to define the unit vector in the l direction
+        # if np.any((x0_lp.T)[1] == 0.0): print("SINGULAR", (x0_lp.T)[1] == 0.0)
         # CONVERT TO LPN COORDINATES
-        
-
-
-        # x0_lp, l_, p_ = self.lpnCoords.impact_vector_no_vec(k0_xyz, x0_xyz)
-        # print("x0_lp", x0_lp)
-
-        # # NEED TO CHECK FOR SINGULAR TRANSFORMATIONS!!!
-        # if np.any((x0_lp.T)[1] == 0.0): 
-        #     print("SINGULAR", (x0_lp.T)[1] == 0.0)
-        # else:
         l_hat, p_hat, n_hat = self.lpnCoords.unit_vectors_lpn_no_vec(k0_xyz, x0_xyz)
         M_xyz_lpn, M_lpn_xyz = self.lpnCoords.matrix_conversion_lpn_xyz_no_vec(l_hat, p_hat, n_hat)
 
         x0_lpn = M_xyz_lpn@x0_xyz
         x0_lpn[2] = 0.
         k0_lpn = M_xyz_lpn@k0_xyz
-        # print("x0_xyz", x0_xyz)
-        # print("x0_lpn matrix", x0_lpn)
-        # print("x0_xyz matrix back", M_lpn_xyz@x0_lpn)
-
-        # print("k0_xyz", k0_xyz)
-        # print("k0_lpn matrix", k0_lpn)
-        # print("k0_xyz matrix back", M_lpn_xyz@k0_lpn)
-
 
         # CONVERT TO 2D SPHERICAL COORDINATES
         x0_sph, k0_sph = self.conversions.convert_xyz_to_sph(x0_lpn, k0_lpn)#x0_xyz, k0_xyz)
-        
-        # k0_sph = [k0_sph[0], 0.0, k0_sph[2]]
-        # x0_sph = [x0_sph[0], 1/2 * sp.pi, x0_sph[2]]
 
         k_r_0, k_th_0, k_ph_0 = k0_sph
         r0, th0, ph0 = x0_sph
-        # th0=1/2*sp.pi
-        # k_th_0 = 0.
-        # Calculate from norm of starting condition
+
+        # Calculate k_t from norm of starting condition
         t0 = 0
         k_t_0 = self.metric.k_t_from_norm_lamb(k_r_0, k_th_0, k_ph_0, t0, r0, th0, ph0)
 
         k_0 = np.array([k_t_0, *k0_sph])
         x_0 = np.array([t0, *x0_sph])
-
-        # print(k_0, x_0)
 
         #Check if starting values are outside the blackhole
         if r0 < self.metric.get_r_s():
@@ -220,12 +162,10 @@ class IntegratorSchwarzschildSPH2D:
 
         result = self.integrator.integrate(\
                         k_0, x_0, self.metric.get_dk, hit_blackhole, \
-                        stop_integration = stop_integration,\
-                        curve_start = curve_start, curve_end = curve_end, nr_points_curve = nr_points_curve, \
-                        method = method, \
-                        max_step = max_step, first_step = first_step, \
-                        rtol = rtol, atol = atol,\
-                        verbose = verbose )
+                        stop_integration,\
+                        curve_start, curve_end, nr_points_curve, \
+                        max_step, first_step, \
+                        verbose = self.verbose )
                        
 
         k_t, k_r, k_th, k_ph, t, r, th, ph = result.y
@@ -400,6 +340,94 @@ class SchwarzschildMetricSpherical2D:
         k4__mu = np.column_stack(np.array([self.g__mu__nu_lamb(*x4_mu[i])@k4_mu[i] for i in range(len(k4_mu))]))
 
         return k4__mu
+
+
+################################################################################################
+################################################################################################
+class Integrator4D:
+################################################################################################
+################################################################################################
+
+    ############################################################################################
+    #
+    ############################################################################################
+    def __init__(self):
+        pass
+
+    ############################################################################################
+    # 
+    ############################################################################################
+    # This function does the numerical integration of the geodesic equation using scipy's solve_ivp
+    def integrate(self, \
+                        k4_start, x4_start, \
+                        get_dk,\
+                        hit_blackhole,\
+                        stop_integration = None,\
+                        curve_start = 0, \
+                        curve_end = 50, \
+                        nr_points_curve = 50, \
+                        max_step = np.inf,\
+                        first_step = None,\
+                        verbose = False \
+                       ):
+          
+        stop_integration_coord_check = None
+        method = "RK45"
+        rtol = 1e-3
+        atol = 1e-6
+
+
+        # Step function needed for solve_ivp
+        def step(lamb, new):
+            k_0_new, k_1_new, k_2_new, k_3_new, x_0_new, x_1_new, x_2_new, x_3_new = new
+
+            dk_0, dk_1, dk_2, dk_3 = get_dk(k_0_new, k_1_new, k_2_new, k_3_new, x_0_new, x_1_new, x_2_new, x_3_new)
+            dx_0, dx_1, dx_2, dx_3 = k_0_new, k_1_new, k_2_new, k_3_new
+
+            return( dk_0, dk_1, dk_2, dk_3, dx_0, dx_1, dx_2, dx_3)
+
+        # EVENTS
+        # This is not perfectly general yet!!
+        events = []
+
+        hit_blackhole.terminal = True
+        events.append(hit_blackhole)
+
+        if stop_integration:
+            stop_integration.terminal = True
+            stop_integration.direction = +1
+            events.append(stop_integration)
+
+        if stop_integration_coord_check:
+            stop_integration_coord_check.terminal = True
+            events.append(stop_integration_coord_check)
+
+        values_0 = [ *k4_start, *x4_start ]
+
+        if nr_points_curve == 0:
+            t_pts = None
+        else:
+            t_pts = np.linspace(curve_start, curve_end, nr_points_curve)
+
+        start = time.time()
+        result = solve_ivp(step, (curve_start, curve_end), values_0, t_eval=t_pts, \
+                           events=events,\
+                           method=method,\
+                           max_step = max_step,\
+                           first_step = first_step,\
+                           atol=atol,\
+                           rtol = rtol)
+        end = time.time()
+        if verbose: print("New: ", result.message, end-start, "sec")
+
+        result.update({"hit_blackhole": len(result.t_events[0])>0})
+        if stop_integration:
+            result.update({"end_check": len(result.t_events[1])>0})
+        if stop_integration_coord_check:
+            result.update({"stop_integration_coord_check": len(result.t_events[2])>0})
+
+        return result
+
 
 ################################################################################################
 ################################################################################################

@@ -74,7 +74,6 @@ class RelativisticCamera:
                         # coordinates = "SPH2PATCH",\
                         M=1.0, \
                         a = 0.0,\
-                        theta_switch = 0.1*np.pi,\
                         samples = 1,\
                         sampling_seed = 43,\
                         y_lim = [], x_lim = [],\
@@ -94,7 +93,6 @@ class RelativisticCamera:
             coordinates -- (default "SPH2PATCH")
             M -- (default 1.0)
             a -- (default 0.0)
-            theta_switch -- (default 0.1*np.pi)
             samples -- (default 1)
             sampling_seed -- (default 43)
             y_lim -- (default [])
@@ -115,7 +113,7 @@ class RelativisticCamera:
 
             self.M = M
             self.a = a
-            self.theta_switch = theta_switch
+            # self.theta_switch = theta_switch
 
             self.camera_location = camera_location
             self.camera_rotation_euler_props = camera_rotation_euler_props
@@ -156,7 +154,7 @@ class RelativisticCamera:
         #     self.gi = BlackholeGeodesicIntegrator(mass=self.M, a=self.a, coordinates=self.coordinates, verbose = verbose_integrator)
 
         # else:
-        self.gi = BlackholeGeodesicIntegrator(mass=self.M, a=self.a, theta_switch = self.theta_switch, verbose = verbose_integrator)#coordinates=self.coordinates, 
+        self.gi = BlackholeGeodesicIntegrator(mass=self.M, a=self.a, verbose = verbose_integrator)#coordinates=self.coordinates, 
 
         self.results = None
 
@@ -165,7 +163,7 @@ class RelativisticCamera:
             # print(f"  - {self.coordinates=}")
             print(f"  - {self.M=}")
             print(f"  - {self.a=}")
-            print(f"  - {self.theta_switch=}")
+            # print(f"  - {self.theta_switch=}")
             print(f"  - {self.verbose=}")
             print(f"  - {verbose_init=}")
             print(f"  - {self.camera_location=}")
@@ -193,7 +191,7 @@ class RelativisticCamera:
                 "_a_"+str(self.a)+"_M_"+str(self.M)+\
                 "_xyz0_"+str(self.camera_location[0])+"_"+str(self.camera_location[1])+"_"+str(self.camera_location[2])+\
                 f"_rot_{self.camera_rotation_euler_props[0]}_angle_{self.camera_rotation_euler_props[1]}"+\
-                "_max_step_"+str(self.max_step)+"_th_switch_"+str(round(self.theta_switch,3))
+                "_max_step_"+str(self.max_step)+"_th_switch_"#+str(round(self.theta_switch,3))
 #"coordinates_"+str(self.coordinates)+
         return fn
 
@@ -207,8 +205,8 @@ class RelativisticCamera:
             "height":self.height, "width":self.width,\
             "y_lim":self.y_lim, "x_lim":self.x_lim,\
             "samples":self.samples, "sampling_seed":self.sampling_seed, \
-            "theta_switch":self.theta_switch, "force_no_sampling":self.force_no_sampling\
-            }#
+            "force_no_sampling":self.force_no_sampling\
+            }# "theta_switch":self.theta_switch, 
             # "max_step":self.max_step,"coordinates":self.coordinates,\
     
     def store_info_dict(self, info):
@@ -232,10 +230,10 @@ class RelativisticCamera:
         self.sampling_seed = info["sampling_seed"]
         self.max_step = info["max_step"]
         # self.coordinates = info["coordinates"]
-        if "theta_switch" in info.keys():
-            self.theta_switch = info["theta_switch"]
-        else:
-            self.theta_switch = 0.1*np.pi
+        # if "theta_switch" in info.keys():
+            # self.theta_switch = info["theta_switch"]
+        # else:
+            # self.theta_switch = 0.1*np.pi
         if "force_no_sampling" in info.keys():
             self.force_no_sampling = info["force_no_sampling"]
         else:
@@ -330,7 +328,7 @@ class RelativisticCamera:
 
         def wrap_calc_trajectory(k0_xyz, x0_xyz, shared, mes="no mes"):
             #if self.verbose: print(f"          Starting: {current_process().name}, processing array of shape: {k0_xyz.shape}")
-            res = shared['gi'].geodesic(k0_xyz = k0_xyz, x0_xyz = x0_xyz, max_step = self.max_step, verbose=False, *args, **kargs)#full_save=False, 
+            res = shared['gi'].geodesic(k0_xyz = k0_xyz, x0_xyz = x0_xyz, max_step = self.max_step, *args, **kargs)#full_save=False, 
             #if self.verbose: print(f"          Done: {current_process()}")
             return res
 

@@ -204,7 +204,7 @@ class GeodesicIntegratorKerr:
     ################################################################################################
     #
     ################################################################################################
-    def calc_trajectory(self, k0_xyz, x0_xyz, *args, **kargs):
+    def calc_trajectory(self, k0_xyz, x0_xyz, R_end, curve_start, curve_end, nr_points_curve, max_step, first_step):
         #mp_on = False
 
         if not isinstance(k0_xyz, np.ndarray): k0_xyz = np.array(k0_xyz)
@@ -227,30 +227,26 @@ class GeodesicIntegratorKerr:
                 return
 
         if len(k0_xyz) == 1:
-            return self.calc_trajectory_xyz(k0_xyz[0], x0_xyz[0], *args, **kargs)
+            return self.calc_trajectory_xyz(k0_xyz[0], x0_xyz[0], R_end, curve_start, curve_end, nr_points_curve, max_step, first_step)
         else:
-            return [self.calc_trajectory_xyz(k0_xyz[i], x0_xyz[i], *args, **kargs) for i in range(len(x0_xyz))]
+            return [self.calc_trajectory_xyz(k0_xyz[i], x0_xyz[i], R_end, curve_start, curve_end, nr_points_curve, max_step, first_step) for i in range(len(x0_xyz))]
 
 
     ################################################################################################
     #
     ################################################################################################
     def calc_trajectory_xyz(self, \
-                        k0_xyz = np.array([1, 0.0, 0.0]), x0_xyz = np.array([-10, 10, 0]), \
-                        R_end = -1,\
-                        curve_start = 0, \
-                        curve_end = 50, \
-                        nr_points_curve = 50, \
-                        method = "RK45",\
-                        max_step = np.inf,\
-                        first_step = None,\
-                        rtol = 1e-3,\
-                        atol = 1e-6,\
-                        verbose = False \
+                        k0_xyz, x0_xyz, \
+                        R_end,\
+                        curve_start, \
+                        curve_end, \
+                        nr_points_curve, \
+                        max_step,\
+                        first_step,\
                        ):
 
-        if verbose: print("Calculate Traj Started")
-        if verbose: print(f"{max_step=}")
+        if self.verbose: print("Calculate Traj Started")
+        if self.verbose: print(f"{max_step=}")
         if not isinstance(x0_xyz,np.ndarray):
             x0_xyz = np.array(x0_xyz)
 
@@ -262,10 +258,8 @@ class GeodesicIntegratorKerr:
         r0, th0, ph0 = x0_bl
 
         result = self.calc_trajectory_bl(\
-                        k_r_0 = k_r_0, r0 = r0, k_th_0=k_th_0, th0=th0, k_ph_0=k_ph_0, ph0=ph0,\
-                        R_end = R_end, curve_start = curve_start, curve_end = curve_end, nr_points_curve = nr_points_curve, \
-                        method = method, max_step = max_step, first_step = first_step, rtol = rtol, atol = atol,\
-                        verbose = verbose )
+                        k_r_0, r0, k_th_0, th0, k_ph_0, ph0,\
+                        R_end, curve_start, curve_end, nr_points_curve, max_step, first_step)
                        
 
         k_r, r, k_th, th, k_ph, ph, k_t = result.y
@@ -274,17 +268,17 @@ class GeodesicIntegratorKerr:
         k_bl = np.array([k_r, k_th, k_ph])
         x_bl = np.array([r, th, ph])
 
-        if verbose: start = time.time()
+        if self.verbose: start = time.time()
         # SHOULD I NOT CHANGE COORDS USING 4 VECTORS????
         x_xyz, k_xyz = self.conversions.convert_bl_to_xyz(x_bl, k_bl, self.a_value)
-        if verbose: print("  Converting result to xyz in: ", round(time.time()-start, 5))
+        if self.verbose: print("  Converting result to xyz in: ", round(time.time()-start, 5))
 
         x4_xyz = np.array([t, *x_xyz])
         k4_xyz = np.array([k_t, *k_xyz])
 
         result.update({"k4_xyz": k4_xyz, "x4_xyz": x4_xyz})
 
-        return k_xyz, x_xyz, result
+        return [k_xyz, x_xyz, result]
 
     ################################################################################################
     # calc_trajectory_bl
@@ -296,21 +290,21 @@ class GeodesicIntegratorKerr:
                         curve_start = 0, \
                         curve_end = 50, \
                         nr_points_curve = 50, \
-                        method = "RK45",\
                         max_step = np.inf,\
                         first_step = None,\
-                        rtol = 1e-3,\
-                        atol = 1e-6,\
-                        verbose = False \
                        ):
 
+        method = "RK45"
+        rtol = 1e-3
+        atol = 1e-6
+
         # Calculate from norm of starting condition
-        if verbose: start = time.time()
+        if self.verbose: start = time.time()
         if self.calc_kt_per_ray:
             k_t_0 = self.get_k_t_from_norm(k_r_0, r0, k_th_0, th0, k_ph_0, ph0)
         else:
             k_t_0 = self.k_t_from_norm_lamb(k_r_0, r0, k_th_0, th0, k_ph_0, ph0, self.r_s_value, self.a_value)
-        if verbose: print("  Calculated k_t in: ", round(time.time()-start, 5))
+        if self.verbose: print("  Calculated k_t in: ", round(time.time()-start, 5))
 
         if R_end == -1:
             R_end = np.inf
@@ -368,7 +362,7 @@ class GeodesicIntegratorKerr:
                                first_step = first_step,\
                                atol=atol,\
                                rtol = rtol)
-            if verbose: 
+            if self.verbose: 
                 print("  Finished solver: ", result.message)
                 print("   Blackhole hit? ", len(result.t_events[0])>0)
                 print("   Time: ",round(time.time()-start, 5), "sec")
@@ -380,7 +374,7 @@ class GeodesicIntegratorKerr:
 
 
         else:
-            if verbose: print("Starting location inside the blackhole.")
+            if self.verbose: print("Starting location inside the blackhole.")
             result = {"start_inside_hole": True}
 
         return result
