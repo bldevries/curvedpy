@@ -1,8 +1,9 @@
 import numpy as np
 import time
-from curvedpy.geodesics.blackhole_integrators.schwarzschild_XYZ import GeodesicIntegratorSchwarzschildXYZ
-from curvedpy.geodesics.blackhole_integrators.kerrschild_XYZ import GeodesicIntegratorKerrSchildXYZ
-from curvedpy.geodesics.blackhole_integrators.schwarzschild_SPH1SPH2 import GeodesicIntegratorSchwarzschildSPH1SPH2
+from curvedpy.geodesics.blackhole_integrators.schwarzschild.special.schwarzschild_XYZ import GeodesicIntegratorSchwarzschildXYZ
+from curvedpy.geodesics.blackhole_integrators.schwarzschild.special.schwarzschild_SPH1SPH2 import GeodesicIntegratorSchwarzschildSPH1SPH2
+from curvedpy.geodesics.blackhole_integrators.kerr.kerr_XYZ import GeodesicIntegratorKerrSchildXYZ
+from curvedpy.geodesics.blackhole_integrators.kerr.kerr_SPH import GeodesicIntegratorKerr
 
 # 29/05/2025: This will be de definitive SS integrator based on lpn coordinates in the th=1/2pi plane.
 from curvedpy.geodesics.blackhole_integrators.schwarzschild.schwarzschild_geodesic import IntegratorSchwarzschildSPH2D
@@ -65,14 +66,17 @@ class BlackholeGeodesicIntegrator:
                 if verbose: print("Running Schwarzschild integrator in SPH1SPH2 coords. Only for testing.")
                 self.gi = GeodesicIntegratorSchwarzschildSPH1SPH2(mass=mass, theta_switch = theta_switch, time_like=time_like, verbose = verbose)
             elif coordinates == "SPH": # ONLY FOR TESTING
+                if verbose: print("Running Schwarzschild integrator in SPH coords. Only for testing.")
                 self.gi = GeodesicIntegratorSchwarzschildSPH1SPH2(mass=mass, theta_switch = theta_switch, time_like=time_like, verbose = verbose)
             else:
                 print("NO INTEGRATOR SELECTED")
 
         else:
-            if verbose: print("Running KerrSchild integrator in XYZ coords")
-            self.gi = GeodesicIntegratorKerrSchildXYZ(mass=mass, a=a, time_like=time_like, verbose = verbose)
-
+            if coordinates == "BL": # ONLY FOR TESTING
+                self.gi = GeodesicIntegratorKerr(mass=mass, a=a, time_like=time_like, verbose = verbose)
+            else:
+                if verbose: print("Running KerrSchild integrator in XYZ coords. Only for testing!")
+                self.gi = GeodesicIntegratorKerrSchildXYZ(mass=mass, a=a, time_like=time_like, verbose = verbose)
 
     ################################################################################################
     #
