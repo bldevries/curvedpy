@@ -1,6 +1,6 @@
 import sympy as sp
 import numpy as np
-from curvedpy.utils.conversions_4D import Conversions4D
+# from curvedpy.utils.conversions_4D import Conversions4D
 from scipy.optimize import fsolve
 
 
@@ -20,7 +20,7 @@ class SchwarzschildMetricXYZ:
 ################################################################################################
 ################################################################################################
 
-    conversions4D = Conversions4D()
+    # conversions4D = Conversions4D()
 
     def __init__(self, mass=1.0, time_like = False, verbose=False):
         
@@ -173,7 +173,7 @@ class SchwarzschildMetricSpherical:
 ################################################################################################
 ################################################################################################
 
-    conversions4D = Conversions4D()
+    # conversions4D = Conversions4D()
 
     ################################################################################################
     #

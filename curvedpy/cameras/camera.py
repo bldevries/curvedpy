@@ -1,7 +1,7 @@
 import numpy as np
 import curvedpy as cp
 from curvedpy.geodesics.blackhole import BlackholeGeodesicIntegrator
-from curvedpy.utils.utils import getImpactParam
+# from curvedpy.utils.utils import getImpactParam
 import random
 import os
 import pickle 
@@ -71,7 +71,7 @@ class RelativisticCamera:
                         camera_rotation_euler_props=['x', 0], \
                         resolution = [64, 64],\
                         field_of_view = [0.3, 0.3],\
-                        coordinates = "SPH2PATCH",\
+                        # coordinates = "SPH2PATCH",\
                         M=1.0, \
                         a = 0.0,\
                         theta_switch = 0.1*np.pi,\
@@ -146,9 +146,9 @@ class RelativisticCamera:
             self.N = self.samples*self.width*self.height
 
             self.max_step = max_step
-            if coordinates == "":
-                coordinates = "SPH2PATCH"
-            self.coordinates = coordinates
+            # if coordinates == "":
+            #     coordinates = "SPH2PATCH"
+            # self.coordinates = coordinates
         
 
 
@@ -156,13 +156,13 @@ class RelativisticCamera:
         #     self.gi = BlackholeGeodesicIntegrator(mass=self.M, a=self.a, coordinates=self.coordinates, verbose = verbose_integrator)
 
         # else:
-        self.gi = BlackholeGeodesicIntegrator(mass=self.M, a=self.a, theta_switch = self.theta_switch, coordinates=self.coordinates, verbose = verbose_integrator)
+        self.gi = BlackholeGeodesicIntegrator(mass=self.M, a=self.a, theta_switch = self.theta_switch, verbose = verbose_integrator)#coordinates=self.coordinates, 
 
         self.results = None
 
         if verbose_init:
             print("Camera Settings: ")
-            print(f"  - {self.coordinates=}")
+            # print(f"  - {self.coordinates=}")
             print(f"  - {self.M=}")
             print(f"  - {self.a=}")
             print(f"  - {self.theta_switch=}")
@@ -187,14 +187,14 @@ class RelativisticCamera:
     def filename_suggestion(self):
         """Constructs and returns a sting containing information of the camera."""
 
-        fn = "coordinates_"+str(self.coordinates)+"_res_"+str(self.height)+"x"+str(self.width)+\
+        fn = "_res_"+str(self.height)+"x"+str(self.width)+\
                 "_fov-x_"+str(self.field_of_view_x)+"_fov-y_"+str(self.field_of_view_y)+\
                 "_sample_"+str(self.samples)+"_sampling_seed_"+str(self.sampling_seed)+\
                 "_a_"+str(self.a)+"_M_"+str(self.M)+\
                 "_xyz0_"+str(self.camera_location[0])+"_"+str(self.camera_location[1])+"_"+str(self.camera_location[2])+\
                 f"_rot_{self.camera_rotation_euler_props[0]}_angle_{self.camera_rotation_euler_props[1]}"+\
                 "_max_step_"+str(self.max_step)+"_th_switch_"+str(round(self.theta_switch,3))
-
+#"coordinates_"+str(self.coordinates)+
         return fn
 
     def cam_information_dict(self):
@@ -207,9 +207,9 @@ class RelativisticCamera:
             "height":self.height, "width":self.width,\
             "y_lim":self.y_lim, "x_lim":self.x_lim,\
             "samples":self.samples, "sampling_seed":self.sampling_seed, \
-            "max_step":self.max_step,"coordinates":self.coordinates,\
             "theta_switch":self.theta_switch, "force_no_sampling":self.force_no_sampling\
-            }
+            }#
+            # "max_step":self.max_step,"coordinates":self.coordinates,\
     
     def store_info_dict(self, info):
         """Dont use this"""
@@ -231,7 +231,7 @@ class RelativisticCamera:
         self.samples = info["samples"]
         self.sampling_seed = info["sampling_seed"]
         self.max_step = info["max_step"]
-        self.coordinates = info["coordinates"]
+        # self.coordinates = info["coordinates"]
         if "theta_switch" in info.keys():
             self.theta_switch = info["theta_switch"]
         else:
@@ -330,7 +330,7 @@ class RelativisticCamera:
 
         def wrap_calc_trajectory(k0_xyz, x0_xyz, shared, mes="no mes"):
             #if self.verbose: print(f"          Starting: {current_process().name}, processing array of shape: {k0_xyz.shape}")
-            res = shared['gi'].geodesic(k0_xyz = k0_xyz, x0_xyz = x0_xyz, max_step = self.max_step, full_save=False, verbose=False, *args, **kargs)
+            res = shared['gi'].geodesic(k0_xyz = k0_xyz, x0_xyz = x0_xyz, max_step = self.max_step, verbose=False, *args, **kargs)#full_save=False, 
             #if self.verbose: print(f"          Done: {current_process()}")
             return res
 
@@ -392,27 +392,27 @@ class RelativisticCamera:
 
 
 
-    def calcStats(self, select_by_impact_parameter = [0, np.inf]):
-        """Debug function"""
+    # def calcStats(self, select_by_impact_parameter = [0, np.inf]):
+    #     """Debug function"""
 
-        stats = []
-        for el in self.results:
-            k, x, res = el
-            x0 = np.column_stack(x)[0]
-            #print(x0)
-            k0 = np.column_stack(k)[0]
-            impact_vector_normed, impact_par = getImpactParam(x0, k0)
-            if impact_par >= select_by_impact_parameter[0] and impact_par <= select_by_impact_parameter[1]:
-                x_end = np.column_stack(x)[-1]
-                k_end = np.column_stack(k)[-1]
-                deflect = k_end.dot(k0)
-                hit = int(res.hit_blackhole)
-                stats.append((x0, k0, x_end, k_end, impact_vector_normed, impact_par, deflect, hit))
+    #     stats = []
+    #     for el in self.results:
+    #         k, x, res = el
+    #         x0 = np.column_stack(x)[0]
+    #         #print(x0)
+    #         k0 = np.column_stack(k)[0]
+    #         impact_vector_normed, impact_par = getImpactParam(x0, k0)
+    #         if impact_par >= select_by_impact_parameter[0] and impact_par <= select_by_impact_parameter[1]:
+    #             x_end = np.column_stack(x)[-1]
+    #             k_end = np.column_stack(k)[-1]
+    #             deflect = k_end.dot(k0)
+    #             hit = int(res.hit_blackhole)
+    #             stats.append((x0, k0, x_end, k_end, impact_vector_normed, impact_par, deflect, hit))
 
-        x0, k0, x_end, k_end, impact_vector_normed, impact_par, deflect, hit = list(zip(*stats))
+    #     x0, k0, x_end, k_end, impact_vector_normed, impact_par, deflect, hit = list(zip(*stats))
         
-        return {"x0":x0, "k0":k0, "x_end":x_end, "k_end":k_end, "impact_vector_normed":impact_vector_normed, \
-                "impact_par":impact_par, "deflect":deflect, "hit":hit}
+    #     return {"x0":x0, "k0":k0, "x_end":x_end, "k_end":k_end, "impact_vector_normed":impact_vector_normed, \
+    #             "impact_par":impact_par, "deflect":deflect, "hit":hit}
 
 
 # https://en.wikipedia.org/wiki/Euler_angles

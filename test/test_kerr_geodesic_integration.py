@@ -18,8 +18,8 @@ class TestCurvedpyKerr(unittest.TestCase):
         self.a = 0.5
         self.m = 1.0
 
-        self.gi = cp.BlackholeGeodesicIntegrator(mass= self.m, a = self.a, coordinates="BL")#metric='schwarzschild', mass=1.0)
-        self.gi_rev = cp.BlackholeGeodesicIntegrator(mass= self.m, a = -self.a, coordinates="BL")#metric='schwarzschild', mass=1.0)
+        self.gi = cp.BlackholeGeodesicIntegrator(mass= self.m, a = self.a, )#metric='schwarzschild', mass=1.0)
+        self.gi_rev = cp.BlackholeGeodesicIntegrator(mass= self.m, a = -self.a)#metric='schwarzschild', mass=1.0)
 
 # self.gi = GeodesicIntegratorKerr(mass= self.m, a = self.a)#metric='schwarzschild', mass=1.0)
 #         self.gi_rev = GeodesicIntegratorKerr(mass= self.m, a = -self.a)#metric='schwarzschild', mass=1.0)
@@ -105,8 +105,8 @@ class TestCurvedpyKERR_conservation(unittest.TestCase):
         self.converter = Conversions()
         self.a = 0.5
         self.m = 1.0
-        self.bhint = cp.BlackholeGeodesicIntegrator(mass= self.m, a = self.a, coordinates="BL")
-        self.bhint_mass = cp.BlackholeGeodesicIntegrator(mass= self.m, a = self.a, coordinates="BL", time_like = True)
+        self.bhint = cp.BlackholeGeodesicIntegrator(mass= self.m, a = self.a)
+        self.bhint_mass = cp.BlackholeGeodesicIntegrator(mass= self.m, a = self.a, time_like = True)
 
         self.start_t, self.end_t, self.steps = 0, 60, 60
         self.max_step = 0.1

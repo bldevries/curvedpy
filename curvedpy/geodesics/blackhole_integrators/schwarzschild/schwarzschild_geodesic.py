@@ -4,10 +4,11 @@ import numpy as np
 from scipy.optimize import fsolve
 import time
 from curvedpy.utils.conversions import Conversions
-from curvedpy.geodesics.blackhole_integrators.integrator_4D import Integrator4D
-from curvedpy.metrics.schwarzschild_metric import SchwarzschildMetricSpherical
 
-from curvedpy.utils.conversions_4D import Conversions4D
+from curvedpy.geodesics.blackhole_integrators.schwarzschild.integrator_4D import Integrator4D
+from curvedpy.geodesics.blackhole_integrators.schwarzschild.schwarzschild_metric import SchwarzschildMetricSpherical
+
+# from curvedpy.utils.conversions_4D import Conversions4D
 
 # -------------------------------
 # ----NAMING CONVENTIONS USED----
@@ -47,6 +48,9 @@ class IntegratorSchwarzschildSPH2D:
     def __init__(self, mass=1.0, time_like = False, eps_theta=0.0000001, verbose=False):
         self.metric = SchwarzschildMetricSpherical2D(mass=mass)
         self.lpnCoords = LPN_coordinates()
+
+        self.M = mass
+        self.a_value = 0.0
 
     # def geodesic(self, k0_xyz, x0_xyz):
     #     if not isinstance(k0_xyz, np.ndarray): k0_xyz = np.array(k0_xyz)
@@ -255,7 +259,7 @@ class SchwarzschildMetricSpherical2D:
 ################################################################################################
 ################################################################################################
 
-    conversions4D = Conversions4D()
+    #conversions4D = Conversions4D()
 
     ################################################################################################
     #
