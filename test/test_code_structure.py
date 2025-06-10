@@ -28,6 +28,44 @@ class TestBasics(unittest.TestCase):
         self.assertTrue( self.gi_kerr.get_m() == self.mass )
         self.assertTrue( self.gi_kerr.get_a() == self.a )
 
+    # Testing if all comes out well if calculating multiple geodesics
+    def test_vectorized_geodesics(self):
+        k0 = np.array([1, 0, 0])
+        x0 = np.array([-15, 15, 10])
+        nr_points_curve = 57
+
+        # SCHWARZ
+        _, x, _ = self.gi_ss.geodesic(k0, x0, nr_points_curve=nr_points_curve)
+        self.assertTrue( x.shape[0] == k0.shape[0] )
+        self.assertTrue( x.shape[1] == nr_points_curve )
+
+
+        res = self.gi_ss.geodesic(\
+                        np.array([k0 for i in range(10)]), \
+                        np.array([x0 for i in range(10)]), \
+                        nr_points_curve=nr_points_curve)
+
+        self.assertTrue( len(res) == 10 )
+        _, x, _ = res[0]
+        self.assertTrue( x.shape[0] == k0.shape[0] )
+        self.assertTrue( x.shape[1] == nr_points_curve )
+
+        # KERR
+        _, x, _ = self.gi_kerr.geodesic(k0, x0, nr_points_curve=nr_points_curve)
+        self.assertTrue( x.shape[0] == k0.shape[0] )
+        self.assertTrue( x.shape[1] == nr_points_curve )
+
+
+        res = self.gi_kerr.geodesic(\
+                        np.array([k0 for i in range(10)]), \
+                        np.array([x0 for i in range(10)]), \
+                        nr_points_curve=nr_points_curve)
+
+        self.assertTrue( len(res) == 10 )
+        _, x, _ = res[0]
+        self.assertTrue( x.shape[0] == k0.shape[0] )
+        self.assertTrue( x.shape[1] == nr_points_curve )
+
 
     # Simple test to see if R_end is implemented
     def test_R_end(self):

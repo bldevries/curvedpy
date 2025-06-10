@@ -87,11 +87,18 @@ class Conversions:
     ##################################################################
     # SPHERICAL - XYZ
     ##################################################################
-    def convert_sph_to_xyz(self, x_sph, k_sph):
+    def convert_sph_to_xyz(self, x_sph, k_sph, vec=False):
+        if vec: 
+            x_sph = x_sph.T
+            k_sph = k_sph.T
         v_xyz = self.coord_conversion_sph_to_xyz(*x_sph)
         k_xyz = self.convert_k_sph_to_k_xyz(*x_sph, *k_sph)
         k_xyz = k_xyz.reshape(*k_sph.shape)
-        return v_xyz, k_xyz
+
+        if vec:
+            return v_xyz.T, k_xyz.T
+        else:
+            return v_xyz, k_xyz
 
     def coord_conversion_sph_to_xyz(self, r, th, ph):
         z = r*np.cos(th)

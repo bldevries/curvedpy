@@ -1,5 +1,9 @@
 import numpy as np
-import time
+from time import time
+
+from multiprocess import Process, Manager, Pool, cpu_count, current_process #Queue
+from functools import partial
+
 from curvedpy.geodesics.blackhole_integrators.kerr.kerr_BL_geodesic import GeodesicIntegratorKerr
 from curvedpy.geodesics.blackhole_integrators.schwarzschild.schwarzschild_geodesic import IntegratorSchwarzschildSPH2D
 
@@ -41,6 +45,7 @@ class BlackholeGeodesicIntegrator:
                 print or not to print lots of information.
 
         """
+        self.verbose=verbose
 
         if a == 0:
             self.gi = IntegratorSchwarzschildSPH2D(mass=mass, time_like=time_like, verbose = verbose)
@@ -66,6 +71,37 @@ class BlackholeGeodesicIntegrator:
         return self.gi.calc_trajectory(k0_xyz, x0_xyz, R_end,\
                         curve_start, curve_end, nr_points_curve, \
                         max_step, first_step)
+
+
+    ################################################################################################
+    #
+    ################################################################################################
+    def geodesic_mp(self,  k0_xyz, x0_xyz, cores, R_end = -1,\
+                        curve_start = 0, curve_end = 50, nr_points_curve = 50, \
+                        max_step = np.inf, first_step = None):
+        start_time = time()
+        
+        split_factor = 16
+        if len(k0_xyz) < split_factor:
+            split_factor = 1
+        start_values = list(zip(np.array_split(k0_xyz, cores*split_factor), np.array_split(x0_xyz, cores*split_factor)))
+        
+        if self.verbose: print(f"Multiproc info: {cores=}, {split_factor=}, {len(start_values)}, {len(start_values[0])}")
+        if self.verbose: print()
+
+        def wrap_calc_trajectory(k0_xyz, x0_xyz, mes="no mes"):#, shared
+            res = self.geodesic(k0_xyz, x0_xyz, R_end, curve_start, curve_end, nr_points_curve, max_step, first_step)#, max_step = self.max_step, *args, **kargs)
+            return res
+
+        with Manager() as manager:
+            partial_wrap_calc_trajectory = partial(wrap_calc_trajectory)#, shared=shared)
+            with Pool(cores) as pool:
+                results_pool = pool.starmap(partial_wrap_calc_trajectory, start_values)
+
+        results = [ x for xs in results_pool for x in xs]
+
+        if self.verbose: print(f"Done mp geodesics")
+        return results #k, x, res
 
 
     ################################################################################################
