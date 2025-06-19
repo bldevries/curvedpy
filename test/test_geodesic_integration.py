@@ -188,12 +188,12 @@ class TestCurvedpySchwarzschild_conservation(unittest.TestCase):
     def test_SCHW_SPH_check_conserved_quantities_photons_mp(self):
         self.gi = BlackholeGeodesicIntegrator(mass = self.mass, time_like = False)#coordinates="SPH2PATCH", 
 
-        k0_sph = np.array([[0.0, 0., -0.1] for i in range(10)])
-        x0_sph = np.array([[3, 1/2*np.pi, 1/4*np.pi] for i in range(10)])
+        k0_sph = np.array([[0.0, 0., -0.1] for i in range(33)])
+        x0_sph = np.array([[3, 1/2*np.pi, 1/4*np.pi] for i in range(33)])
 
         x0_xyz, k0_xyz = self.converter.convert_sph_to_xyz(x0_sph, k0_sph, vec=True)
 
-        results =  self.gi.geodesic_mp(k0_xyz, x0_xyz, cores=4, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
+        results =  self.gi.geodesic_mp(k0_xyz, x0_xyz, cores=4, split_factor = 4, max_step=self.max_step)#curve_end = 100, nr_points_curve = 1000, 
 
         for item in results:
             k, x, res = item

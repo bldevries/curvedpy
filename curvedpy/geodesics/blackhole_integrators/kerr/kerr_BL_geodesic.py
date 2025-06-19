@@ -204,7 +204,8 @@ class GeodesicIntegratorKerr:
     ################################################################################################
     #
     ################################################################################################
-    def calc_trajectory(self, k0_xyz, x0_xyz, R_end, curve_start, curve_end, nr_points_curve, max_step, first_step):
+    def calc_trajectory(self, k0_xyz, x0_xyz, R_end, curve_start, curve_end, nr_points_curve, max_step, first_step, phi_end):
+        # phi_end not used here yet
         #mp_on = False
 
         if not isinstance(k0_xyz, np.ndarray): k0_xyz = np.array(k0_xyz)

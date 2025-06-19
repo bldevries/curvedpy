@@ -92,9 +92,13 @@ def matrix_conversion_lpn_xyz(l_hat, p_hat, n_hat):
 
     # Can this be faster without list comprehension!!
 
-    # M_xyz_lpn = np.array([l_hat[0], p_hat[0], n_hat[0]]).T
     M_lpn_xyz = [np.array([l_hat[i], p_hat[i], n_hat[i]]).T for i in range(l_hat.shape[0])]
-    M_xyz_lpn = [np.linalg.inv(M) for M in M_lpn_xyz]
+    # It might be this: 
+    #M_lpn_xyz = np.einsum("ijk->jik", np.array([l_hat, p_hat, n_hat]))
+
+    #M_xyz_lpn = [np.linalg.inv(M) for M in M_lpn_xyz]
+    M_xyz_lpn = np.linalg.inv(M_lpn_xyz)
+
     return M_xyz_lpn, M_lpn_xyz#np.linalg.inv(M_xyz_lpn)
 
 #################################################

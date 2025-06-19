@@ -59,7 +59,7 @@ class IntegratorSchwarzschildSPH2D:
     ################################################################################################
     def calc_trajectory(self,   k0_xyz, x0_xyz, \
                                 R_end, curve_start, curve_end, nr_points_curve, \
-                                max_step, first_step,\
+                                max_step, first_step, phi_end\
                         ):
 
         if not isinstance(k0_xyz, np.ndarray): k0_xyz = np.array(k0_xyz)
@@ -88,14 +88,14 @@ class IntegratorSchwarzschildSPH2D:
                         curve_end, \
                         nr_points_curve, \
                         max_step,\
-                        first_step)
+                        first_step, phi_end)
         else:
             return [self.calc_trajectory_xyz(k0_xyz[i], x0_xyz[i],R_end,\
                         curve_start, \
                         curve_end, \
                         nr_points_curve, \
                         max_step,\
-                        first_step) for i in range(len(x0_xyz))]
+                        first_step, phi_end) for i in range(len(x0_xyz))]
 
 
     ################################################################################################
@@ -109,6 +109,7 @@ class IntegratorSchwarzschildSPH2D:
                         nr_points_curve, \
                         max_step,\
                         first_step,\
+                        phi_end
                        ):
 
         if not isinstance(x0_xyz,np.ndarray):
@@ -134,6 +135,41 @@ class IntegratorSchwarzschildSPH2D:
         # CONVERT TO 2D SPHERICAL COORDINATES
         x0_sph, k0_sph = self.conversions.convert_xyz_to_sph(x0_lpn, k0_lpn)#x0_xyz, k0_xyz)
 
+        k_sph, x_sph, result = self.calc_trajectory_sph(\
+                        k0_sph, x0_sph, \
+                        R_end,\
+                        curve_start, \
+                        curve_end, \
+                        nr_points_curve, \
+                        max_step,\
+                        first_step,\
+                       )
+
+        # SHOULD I NOT CHANGE COORDS USING 4 VECTORS????
+        x_lpn, k_lpn = self.conversions.convert_sph_to_xyz(x_sph, k_sph)
+        
+        k_xyz = np.array([M_lpn_xyz@k_i for k_i in k_lpn.T]).T
+        x_xyz = np.array([M_lpn_xyz@x_i for x_i in x_lpn.T]).T
+        
+        # x4_xyz = np.array([t, *x_xyz])
+        # k4_xyz = np.array([k_t, *k_xyz])
+        # result.update({"k4_xyz": k4_xyz, "x4_xyz": x4_xyz})
+
+        return k_xyz, x_xyz, result
+
+    ################################################################################################
+    #
+    ################################################################################################
+    def calc_trajectory_sph(self, \
+                        k0_sph, x0_sph, \
+                        R_end,\
+                        curve_start, \
+                        curve_end, \
+                        nr_points_curve, \
+                        max_step,\
+                        first_step,\
+                        phi_end=False\
+                       ):
         k_r_0, k_th_0, k_ph_0 = k0_sph
         r0, th0, ph0 = x0_sph
 
@@ -159,8 +195,11 @@ class IntegratorSchwarzschildSPH2D:
         #elif R_end < r0: R_end = r0*1.01
         def stop_integration(t, y): 
             k_0, k_1, k_2, k_3, x_0, x_1, x_2, x_3 = y
-            r = x_1 #calc_radius_from_x_mu(x_0, x_1, x_2, x_3)
-            return r - R_end
+            if phi_end:
+                return x_3-phi_end
+            else:
+                r = x_1 #calc_radius_from_x_mu(x_0, x_1, x_2, x_3)
+                return r - R_end
 
         result = self.integrator.integrate(\
                         k_0, x_0, self.metric.get_dk, hit_blackhole, \
@@ -168,7 +207,6 @@ class IntegratorSchwarzschildSPH2D:
                         curve_start, curve_end, nr_points_curve, \
                         max_step, first_step, \
                         verbose = self.verbose )
-                       
 
         k_t, k_r, k_th, k_ph, t, r, th, ph = result.y
         lamb = result.t
@@ -181,18 +219,9 @@ class IntegratorSchwarzschildSPH2D:
 
         result.update({"k4_sph": k4_sph, "x4_sph": x4_sph})
 
-        # SHOULD I NOT CHANGE COORDS USING 4 VECTORS????
-        x_lpn, k_lpn = self.conversions.convert_sph_to_xyz(x_sph, k_sph)
-        
-        k_xyz = np.array([M_lpn_xyz@k_i for k_i in k_lpn.T]).T
-        x_xyz = np.array([M_lpn_xyz@x_i for x_i in x_lpn.T]).T
-        
-        x4_xyz = np.array([t, *x_xyz])
-        k4_xyz = np.array([k_t, *k_xyz])
+        return k_sph, x_sph, result
 
-        result.update({"k4_xyz": k4_xyz, "x4_xyz": x4_xyz})
 
-        return k_xyz, x_xyz, result
 
 
 ################################################################################################
