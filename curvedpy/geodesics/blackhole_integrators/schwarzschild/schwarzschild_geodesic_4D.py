@@ -175,10 +175,10 @@ class IntegratorSchwarzschildSPH2D:
 
         # Calculate k_t from norm of starting condition
         t0 = 0
-        k_t_0 = self.metric.k_t_from_norm_lamb(k_r_0, k_ph_0, t0, r0, ph0)
+        k_t_0 = self.metric.k_t_from_norm_lamb(k_r_0, k_th_0, k_ph_0, t0, r0, th0, ph0)
 
-        k_0 = np.array([k_t_0, k_r_0, k_ph_0])#*k0_sph])
-        x_0 = np.array([t0, r0, ph0])#*x0_sph])
+        k_0 = np.array([k_t_0, *k0_sph])
+        x_0 = np.array([t0, *x0_sph])
 
         #Check if starting values are outside the blackhole
         if r0 < self.metric.get_r_s():
@@ -187,18 +187,18 @@ class IntegratorSchwarzschildSPH2D:
 
         def hit_blackhole(t, y): 
             eps = 0.01
-            k_t, k_r, k_ph, t, r, ph = y
-            # r = x_1#calc_radius_from_x_mu(x_0, x_1, x_2, x_3)
+            k_0, k_1, k_2, k_3, x_0, x_1, x_2, x_3 = y
+            r = x_1#calc_radius_from_x_mu(x_0, x_1, x_2, x_3)
             return r - (self.metric.get_r_s()+eps)
 
         if R_end == -1: R_end = np.inf
         #elif R_end < r0: R_end = r0*1.01
         def stop_integration(t, y): 
-            k_t, k_r, k_ph, t, r, ph = y
+            k_0, k_1, k_2, k_3, x_0, x_1, x_2, x_3 = y
             if phi_end:
-                return ph-phi_end
+                return x_3-phi_end
             else:
-                # r = x_1 #calc_radius_from_x_mu(x_0, x_1, x_2, x_3)
+                r = x_1 #calc_radius_from_x_mu(x_0, x_1, x_2, x_3)
                 return r - R_end
 
         result = self.integrator.integrate(\
@@ -208,11 +208,8 @@ class IntegratorSchwarzschildSPH2D:
                         max_step, first_step, \
                         verbose = self.verbose )
 
-        k_t, k_r, k_ph, t, r, ph = result.y
+        k_t, k_r, k_th, k_ph, t, r, th, ph = result.y
         lamb = result.t
-
-        k_th = np.full(k_r.shape, 0.0)
-        th = np.full(r.shape, 1/2*np.pi)
 
         k_sph = np.array([k_r, k_th, k_ph])
         x_sph = np.array([r, th, ph])
@@ -242,9 +239,9 @@ class SchwarzschildMetricSpherical2D:
 
         # Connection Symbols
         def gamma_func(sigma, mu, nu):
-            coord_symbols = [self.t, self.r, self.ph]
+            coord_symbols = [self.t, self.r, self.th, self.ph]
             gamma_sigma_mu_nu = 0
-            for rho in [0,1,2]:
+            for rho in [0,1,2,3]:
                 gamma_sigma_mu_nu += 1/2 * self.g_mu_nu[sigma, rho] * (\
                                 self.g__mu__nu_diff[mu][nu, rho] + \
                                 self.g__mu__nu_diff[nu][rho, mu] - \
@@ -271,19 +268,19 @@ class SchwarzschildMetricSpherical2D:
         #self.r_s  = sp.symbols('r_s', positive=True, real=True)
 
         self.g__mu__nu = sp.Matrix([\
-                            [-1*(1-self.r_s/self.r), 0, 0],\
-                            [0, 1/(1-self.r_s/self.r), 0],\
-                            # [0, 0, self.r**2, 0],\
-                            [0, 0, self.r**2 * sp.sin(0.5*sp.pi)**2]\
+                            [-1*(1-self.r_s/self.r), 0, 0, 0],\
+                            [0, 1/(1-self.r_s/self.r), 0, 0],\
+                            [0, 0, self.r**2, 0],\
+                            [0, 0, 0, self.r**2 * sp.sin(self.th)**2]\
                             ])
 
-        # self.g__mu__nu = self.g__mu__nu.subs(self.th, 0.5*sp.pi)
+        self.g__mu__nu = self.g__mu__nu.subs(self.th, 0.5*sp.pi)
         self.g_mu_nu = self.g__mu__nu.inv()
         self.g__mu__nu_diff = [self.g__mu__nu.diff(self.t), self.g__mu__nu.diff(self.r), \
-                                     self.g__mu__nu.diff(self.ph)]
+                                     self.g__mu__nu.diff(self.th), self.g__mu__nu.diff(self.ph)]
 
         # We lambdify these to get numpy arrays
-        self.g__mu__nu_lamb = sp.lambdify([self.t, self.r, self.ph], self.g__mu__nu, "numpy")
+        self.g__mu__nu_lamb = sp.lambdify([self.t, self.r, self.th, self.ph], self.g__mu__nu, "numpy")
         self.g_mu_nu_lamb = sp.lambdify([self.t, self.r, self.ph], self.g_mu_nu, "numpy")
         self.g__mu__nu_diff_lamb = sp.lambdify([self.t, self.r, self.ph], self.g__mu__nu_diff, "numpy")
 
@@ -292,30 +289,30 @@ class SchwarzschildMetricSpherical2D:
 
 
         # Connection Symbols
-        self.gam_t = sp.Matrix([[gamma_func(0,mu, nu).simplify() for mu in [0,1,2]] for nu in [0,1,2]])
-        self.gam_r = sp.Matrix([[gamma_func(1,mu, nu).simplify() for mu in [0,1,2]] for nu in [0,1,2]])
-        # self.gam_th = sp.Matrix([[gamma_func(2,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
-        self.gam_ph = sp.Matrix([[gamma_func(2,mu, nu).simplify() for mu in [0,1,2]] for nu in [0,1,2]])
+        self.gam_t = sp.Matrix([[gamma_func(0,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        self.gam_r = sp.Matrix([[gamma_func(1,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        self.gam_th = sp.Matrix([[gamma_func(2,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
+        self.gam_ph = sp.Matrix([[gamma_func(3,mu, nu).simplify() for mu in [0,1,2,3]] for nu in [0,1,2,3]])
         if verbose: print("Done connection symbols")
 
         # Building up the geodesic equation: 
         # Derivatives: k_beta = d x^beta / d lambda
         self.k_t, self.k_r, self.k_th, self.k_ph = sp.symbols('k_t k_r k_th k_ph', real=True)
-        self.k = [self.k_t, self.k_r, self.k_ph]
+        self.k = [self.k_t, self.k_r, self.k_th, self.k_ph]
     
         # Second derivatives: d k_beta = d^2 x^beta / d lambda^2
-        self.dk_t = sum([- self.gam_t[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2] for nu in [0,1,2]])
-        self.dk_r = sum([- self.gam_r[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2] for nu in [0,1,2]])
-        # self.dk_th = sum([- self.gam_th[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
-        self.dk_ph = sum([- self.gam_ph[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2] for nu in [0,1,2]])
+        self.dk_t = sum([- self.gam_t[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
+        self.dk_r = sum([- self.gam_r[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
+        self.dk_th = sum([- self.gam_th[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
+        self.dk_ph = sum([- self.gam_ph[nu, mu]*self.k[mu]*self.k[nu] for mu in [0,1,2,3] for nu in [0,1,2,3]])
         if verbose: print("Done diff of k")
 
        # Norm of k
         # the norm of k determines if you have a massive particle (-1), a mass-less photon (0) 
         # or a space-like curve (1)
-        self.k = sp.Matrix([self.k_t, self.k_r, self.k_ph])
+        self.k = sp.Matrix([self.k_t, self.k_r, self.k_th, self.k_ph])
         self.norm_k = (self.k.T*self.g__mu__nu*self.k)[0]
-        self.norm_k_lamb = sp.lambdify([self.k_t, self.k_r, self.k_ph, self.r, self.ph], \
+        self.norm_k_lamb = sp.lambdify([self.k_t, self.k_r, self.k_th, self.k_ph, self.r, self.th, self.ph], \
                                                self.norm_k, "numpy")
 
         # Now we calculate k_t using the norm. This eliminates one of the differential equations.
@@ -328,31 +325,32 @@ class SchwarzschildMetricSpherical2D:
         if verbose: print("Done norm of k")
 
         # Lambdify versions
-        self.dk_t_lamb = sp.lambdify([  self.k_t, self.k_r, self.k_ph, \
-                                        self.t, self.r, self.ph], \
+        self.dk_t_lamb = sp.lambdify([  self.k_t, self.k_r, self.k_th, self.k_ph, \
+                                        self.t, self.r, self.th, self.ph], \
                                         self.dk_t, "numpy")
-        self.dk_r_lamb = sp.lambdify([  self.k_t, self.k_r, self.k_ph, \
-                                        self.t, self.r, self.ph], \
+        self.dk_r_lamb = sp.lambdify([  self.k_t, self.k_r, self.k_th, self.k_ph, \
+                                        self.t, self.r, self.th, self.ph], \
                                         self.dk_r, "numpy")
-        # self.dk_th_lamb = sp.lambdify([ self.k_t, self.k_r, self.k_th, self.k_ph, \
-        #                                 self.t, self.r, self.th, self.ph], \
-        #                                 self.dk_th, "numpy")
-        self.dk_ph_lamb = sp.lambdify([ self.k_t, self.k_r, self.k_ph, \
-                                        self.t, self.r, self.ph], \
+        self.dk_th_lamb = sp.lambdify([ self.k_t, self.k_r, self.k_th, self.k_ph, \
+                                        self.t, self.r, self.th, self.ph], \
+                                        self.dk_th, "numpy")
+        self.dk_ph_lamb = sp.lambdify([ self.k_t, self.k_r, self.k_th, self.k_ph, \
+                                        self.t, self.r, self.th, self.ph], \
                                         self.dk_ph, "numpy")
-        self.k_t_from_norm_lamb = sp.lambdify([ self.k_r, self.k_ph, \
-                                                self.t, self.r, self.ph], \
+        self.k_t_from_norm_lamb = sp.lambdify([ self.k_r, self.k_th, self.k_ph, \
+                                                self.t, self.r, self.th, self.ph], \
                                                 self.k_t_from_norm, "numpy")
         if verbose: print("Done lambdifying")
 
     ################################################################################################
     #
     ################################################################################################
-    def get_dk(self, kt_val, kr_val, kph_val, t_val, r_val, ph_val):
+    def get_dk(self, kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val):
         return \
-            self.dk_t_lamb(kt_val, kr_val, kph_val, t_val, r_val, ph_val), \
-            self.dk_r_lamb(kt_val, kr_val, kph_val, t_val, r_val, ph_val), \
-            self.dk_ph_lamb(kt_val, kr_val, kph_val, t_val, r_val, ph_val), \
+            self.dk_t_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
+            self.dk_r_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
+            self.dk_th_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
+            self.dk_ph_lamb(kt_val, kr_val, kth_val, kph_val, t_val, r_val, th_val, ph_val), \
     
     ################################################################################################
     #
@@ -370,19 +368,7 @@ class SchwarzschildMetricSpherical2D:
         if x4_mu.shape[0] == 4:
             x4_mu = np.column_stack(x4_mu)
 
-        t, r, th, ph, = sp.symbols('t r \\theta \\phi', real=True)
-        g__mu__nu_4D = sp.Matrix([\
-                                    [-1*(1-self.r_s/r), 0, 0, 0],\
-                                    [0, 1/(1-self.r_s/r), 0, 0],\
-                                    [0, 0, r**2, 0],\
-                                    [0, 0, 0, r**2 * sp.sin(0.5*sp.pi)**2]\
-                                    ])
-        g__mu__nu_lamb_4D = sp.lambdify([t, r, th, ph], g__mu__nu_4D, "numpy")
-
-        k4__mu = np.column_stack(np.array([g__mu__nu_lamb_4D(*x4_mu[i])@k4_mu[i] for i in range(len(k4_mu))]))
-
-
-        # k4__mu = np.column_stack(np.array([self.g__mu__nu_lamb(*x4_mu[i])@k4_mu[i] for i in range(len(k4_mu))]))
+        k4__mu = np.column_stack(np.array([self.g__mu__nu_lamb(*x4_mu[i])@k4_mu[i] for i in range(len(k4_mu))]))
 
         return k4__mu
 
@@ -424,14 +410,12 @@ class Integrator4D:
 
         # Step function needed for solve_ivp
         def step(lamb, new):
-            k_t_new, k_r_new, k_phi_new, x_t_new, x_r_new, x_phi_new = new
+            k_0_new, k_1_new, k_2_new, k_3_new, x_0_new, x_1_new, x_2_new, x_3_new = new
 
-            # k_0_new, k_1_new, k_2_new, k_3_new, x_0_new, x_1_new, x_2_new, x_3_new = new
+            dk_0, dk_1, dk_2, dk_3 = get_dk(k_0_new, k_1_new, k_2_new, k_3_new, x_0_new, x_1_new, x_2_new, x_3_new)
+            dx_0, dx_1, dx_2, dx_3 = k_0_new, k_1_new, k_2_new, k_3_new
 
-            dk_t, dk_r, dk_phi = get_dk(k_t_new, k_r_new, k_phi_new, x_t_new, x_r_new, x_phi_new)
-            dx_t, dx_r, dx_phi = k_t_new, k_r_new, k_phi_new
-
-            return dk_t, dk_r, dk_phi, dx_t, dx_r, dx_phi
+            return( dk_0, dk_1, dk_2, dk_3, dx_0, dx_1, dx_2, dx_3)
 
         # EVENTS
         # This is not perfectly general yet!!
@@ -457,9 +441,6 @@ class Integrator4D:
             t_pts = np.linspace(curve_start, curve_end, nr_points_curve)
 
         start = time.time()
-
-        # Doc scipy: setting vectorized=True allows for faster finite difference approximation of the Jacobian by methods ‘Radau’ and ‘BDF’, 
-        # but will result in slower execution for other methods and for ‘Radau’ and ‘BDF’ in some circumstances (e.g. small len(y0)).
         result = solve_ivp(step, (curve_start, curve_end), values_0, t_eval=t_pts, \
                            events=events,\
                            method=method,\
