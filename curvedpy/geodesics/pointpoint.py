@@ -60,8 +60,29 @@ class BlackholeGeodesicPointPointIntegrator:
     ##################################################################################################
     ##################################################################################################
     ##################################################################################################
-    def geodesic_pp(self, x_f_xyz=np.array([[-10,10,0]]), x0_xyz = np.array([[10,0,0]]), image_nr=1, \
+    def geodesic_pp_projection_matrix(self, x_f_xyz=np.array([-10,10,0]), x0_xyz = np.array([10,0,0]), image_nr=1, \
                     max_step = 1.0, eps_r = 0.0001, eps_phi=0.00000000005, max_iterations = 100, verbose=False):
+        # NO VECTORIZATION YET!!
+        l_x_xyz, l_translation_xyz = self.geodesic_pp(\
+            x_f_xyz=np.array([x_f_xyz]), x0_xyz = np.array([x0_xyz]), image_nr=image_nr, \
+            max_step = max_step, eps_r = eps_r, eps_phi=eps_phi, max_iterations = max_iterations, \
+            verbose=verbose)
+
+        M_tr = [[1,0,0, l_translation_xyz[0][0]],\
+                [0,1,0, l_translation_xyz[0][1]],\
+                [0,0,1, l_translation_xyz[0][2]],\
+                [0,0,0,1]]
+
+        return M_tr
+
+
+
+    ##################################################################################################
+    ##################################################################################################
+    ##################################################################################################
+    def geodesic_pp(self, x_f_xyz=np.array([[-10,10,0]]), x0_xyz = np.array([[10,0,0]]), image_nr=1, \
+                    max_step = 1.0, eps_r = 0.0001, eps_phi=0.00000000005, max_iterations = 100, verbose=False, \
+                    return_matrices = False):
         
         M_xyz_lpn, M_lpn_xyz = self.matrix_conversion_lpn_xyz(*self.unit_vectors_lpn(x0_xyz, x_f_xyz))
 
@@ -71,18 +92,20 @@ class BlackholeGeodesicPointPointIntegrator:
         # THIS NEEDS VECTORIZATION!
         l_x_lpn = []
         l_x_xyz = []
+        l_translation_xyz = []
         for i in range(len(x0_lpn)):
-            _, _, _, x_lpn, _ = self.geodesic_pp_lpn(x_f_lpn[i], x0_lpn[i], image_nr=image_nr, \
+            translation_lpn, _, _, _, x_lpn, _ = self.geodesic_pp_lpn(x_f_lpn[i], x0_lpn[i], image_nr=image_nr, \
                     max_step = max_step, eps_r = eps_r, eps_phi=eps_phi, max_iterations = max_iterations, verbose=verbose)
             l_x_lpn.append(np.array(x_lpn[0]).T)
             l_x_xyz.append(M_lpn_xyz[i]@np.array(x_lpn[0]))
 
-        # k0_lpn, length, l_k_lpn, l_x_lpn, l_results = self.geodesic_pp_lpn(x_f_lpn, x0_lpn, image_nr=image_nr, \
-        #             max_step = max_step, eps_r = eps_r, eps_phi=eps_phi, max_iterations = max_iterations, verbose=verbose)
+            translation_xyz = M_lpn_xyz[i] @ translation_lpn
+            l_translation_xyz.append(translation_xyz)
 
-        # l_x_xyz = np.einsum('bij,bcj->bci', M_lpn_xyz, l_x_lpn)
-
-        return l_x_xyz
+        if return_matrices:
+            return np.array(l_x_xyz), np.array(l_translation_xyz), M_xyz_lpn, M_lpn_xyz
+        else:
+            return np.array(l_x_xyz), np.array(l_translation_xyz)
 
     ##################################################################################################
     ##################################################################################################
@@ -136,7 +159,7 @@ class BlackholeGeodesicPointPointIntegrator:
             # I can not just increase phi_f with np.pi, like I do for the third image 
             # (phi_f = phi_f + 2*np.pi) since the second image geodesic really goes into
             # the negative phi direction.
-            x_f_lpn_use = np.array([x_f_lpn[0], -x_f_lpn[1], x_f_lpn[2]])
+            x_f_lpn_use = np.copy(np.array([x_f_lpn[0], -x_f_lpn[1], x_f_lpn[2]]))
         else:
             x_f_lpn_use = np.copy(x_f_lpn)
 
@@ -202,6 +225,7 @@ class BlackholeGeodesicPointPointIntegrator:
                     l_k.append(k_xyz)
                     if secondary_image:
                         x_xyz[1] = -x_xyz[1]
+                        k_xyz[1] = -k_xyz[1]
                     # if y_is_neg:
                     #     x_xyz[1] = -x_xyz[1]
                     #     x_f_xyz[1] = -x_f_xyz[1]
@@ -275,12 +299,16 @@ class BlackholeGeodesicPointPointIntegrator:
 
         x_final = l_x[-1].T
         length = sum([np.linalg.norm(x_final[i+1]-x_final[i]) for i in range(len(x_final)-1)])
-        length += np.linalg.norm(x_f_lpn-x_final[-1])
+        length += np.linalg.norm(x_f_lpn_use-x_final[-1])
+
+        if secondary_image:
+            x_f_lpn_use[1] = -x_f_lpn_use[1]
+        translation_lpn = x0_lpn + k0_lpn/np.linalg.norm(k0_lpn) * length - x_f_lpn_use#l_x[-1].T[-1]
 
         if debug:
-            return k0_lpn, length, l_k, l_x, l_results, debug_log
+            return translation_lpn, k0_lpn, length, l_k, l_x, l_results, debug_log
         else:
-            return k0_lpn, length, l_k, l_x, l_results
+            return translation_lpn, k0_lpn, length, l_k, l_x, l_results
 
 
     ##################################################################################################

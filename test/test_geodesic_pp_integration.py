@@ -35,11 +35,11 @@ class TestCurvedpySchwarzschildPointPoint(unittest.TestCase):
         x0_lpn = M_xyz_lpn[0]@x0_xyz[0]
         xf_lpn = M_xyz_lpn[0]@xf_xyz[0]
 
-        k0_lpn, length, l_k_lpn, l_x_lpn, l_results = self.gi.geodesic_pp_lpn(xf_lpn, x0_lpn, max_step = self.max_step, eps_r=0.001, image_nr=1)
+        translation_lpn, k0_lpn, length, l_k_lpn, l_x_lpn, l_results = self.gi.geodesic_pp_lpn(xf_lpn, x0_lpn, max_step = self.max_step, eps_r=0.001, image_nr=1)
         x_xyz = M_lpn_xyz[0]@l_x_lpn[0]
         self.assertTrue( round( np.linalg.norm(xf_xyz[0] - x_xyz.T[-1]), self.round_level ) == 0.0 )
 
-        k0_lpn, length, l_k_lpn, l_x_lpn, l_results = self.gi.geodesic_pp_lpn(x0_lpn, xf_lpn, max_step = self.max_step, eps_r=0.001, image_nr=1)
+        translation_lpn, k0_lpn, length, l_k_lpn, l_x_lpn, l_results = self.gi.geodesic_pp_lpn(x0_lpn, xf_lpn, max_step = self.max_step, eps_r=0.001, image_nr=1)
         x_xyz = M_lpn_xyz[0]@l_x_lpn[0]
         # I use x_xyz.T[0] and not x_xyz.T[-1] since the algorithm
         self.assertTrue( round( np.linalg.norm(x0_xyz[0] - x_xyz.T[-1]), self.round_level ) == 0.0 )
@@ -48,10 +48,10 @@ class TestCurvedpySchwarzschildPointPoint(unittest.TestCase):
         x0_xyz = np.array([[0,10,5]])
         xf_xyz = np.array([[5,0,3]])
 
-        x_xyz = self.gi.geodesic_pp(xf_xyz, x0_xyz, max_step = self.max_step, eps_r=0.001, image_nr=1)
+        x_xyz, l_translation_xyz = self.gi.geodesic_pp(xf_xyz, x0_xyz, max_step = self.max_step, eps_r=0.001, image_nr=1)
         self.assertTrue( round( np.linalg.norm(xf_xyz[0] - x_xyz[0].T[-1]), self.round_level ) == 0.0 )
 
-        x_xyz = self.gi.geodesic_pp(x0_xyz, xf_xyz, max_step = self.max_step, eps_r=0.001, image_nr=1)
+        x_xyz, l_translation_xyz = self.gi.geodesic_pp(x0_xyz, xf_xyz, max_step = self.max_step, eps_r=0.001, image_nr=1)
         self.assertTrue( round( np.linalg.norm(x0_xyz[0] - x_xyz[0].T[-1]), self.round_level ) == 0.0 )
 
 
