@@ -87,21 +87,7 @@ class BlackholeGeodesicPointPointIntegrator:
 
         return M_xyz_lpn, M_lpn_xyz#np.linalg.inv(M_xyz_lpn)
 
-    ##################################################################################################
-    def geodesic_pp_projection_matrix(self, x_f_xyz=np.array([-10,10,0]), x0_xyz = np.array([10,0,0]), image_nr=1, \
-                    max_step = 1.0, eps_r = 0.0001, eps_phi=0.00000000005, max_iterations = 100, verbose=False):
-        # NO VECTORIZATION YET!!
-        l_x_xyz, l_translation_xyz = self.geodesic_pp(\
-            x_f_xyz=np.array([x_f_xyz]), x0_xyz = np.array([x0_xyz]), image_nr=image_nr, \
-            max_step = max_step, eps_r = eps_r, eps_phi=eps_phi, max_iterations = max_iterations, \
-            verbose=verbose)
 
-        M_tr = [[1,0,0, l_translation_xyz[0][0]],\
-                [0,1,0, l_translation_xyz[0][1]],\
-                [0,0,1, l_translation_xyz[0][2]],\
-                [0,0,0,1]]
-
-        return M_tr
 
 
     ##################################################################################################

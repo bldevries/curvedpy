@@ -51,7 +51,7 @@ class TestCurvedpySchwarzschild(unittest.TestCase):
         self.max_step = 1
         self.round_level = 4
 
-    def test_SCHW_check_direction_symmetry(self):  
+    def test_geodesic_SCHW_direction_symmetry(self):  
         # Check if you get the same line forward or backward
 
         # Line in forward direction
@@ -86,8 +86,20 @@ class TestCurvedpySchwarzschild(unittest.TestCase):
         self.assertTrue( bool((np.round(x_xyz[1],self.round_level) == np.round(np.flip(x_xyz2[1]),self.round_level)).all()) )
         self.assertTrue( bool((np.round(x_xyz[2],self.round_level) == np.round(np.flip(x_xyz2[2]),self.round_level)).all()) )
 
+    def test_geodesic_SCHW_vectorization(self):  
+        # Check if you get the same line forward or backward
 
+        # Line in forward direction
+        k0_xyz = np.array([[1, 0.0, 0.0], [0, 1, 0]])
+        x0_xyz = np.array([[-10, 10, 0], [10,10,0]])
 
+        res = self.gi.geodesic(k0_xyz, x0_xyz, \
+                                  curve_start = self.start_t, \
+                                  curve_end = self.end_t, \
+                                  nr_points_curve = self.steps,\
+                                 max_step=self.max_step)
+        
+        self.assertTrue( len(k0_xyz) == len(res) )
 
     # def test_check_constant_kt(self):
     #     k0_xyz = np.array([1, 0.0, 0.0])

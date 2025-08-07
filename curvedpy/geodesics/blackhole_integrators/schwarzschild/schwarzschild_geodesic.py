@@ -82,6 +82,8 @@ class IntegratorSchwarzschildSPH2D:
                 print("k or x do not have 3 components")
                 return
 
+
+        # THIS IS NOT HOW TO DO THE VECTORIZATION!!
         if len(k0_xyz) == 1:
             return self.calc_trajectory_xyz(k0_xyz[0], x0_xyz[0], R_end,\
                         curve_start, \
