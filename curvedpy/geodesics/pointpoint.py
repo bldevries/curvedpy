@@ -104,7 +104,6 @@ class BlackholeGeodesicPointPointIntegrator:
         return M_tr
 
 
-
     ##################################################################################################
     def geodesic_pp(self, x_f_xyz=np.array([[-10,10,0]]), x0_xyz = np.array([[10,0,0]]), image_nr=1, \
                     max_step = 1.0, eps_r = 0.0001, eps_phi=0.00000000005, max_iterations = 100, verbose=False, \
@@ -120,23 +119,24 @@ class BlackholeGeodesicPointPointIntegrator:
         l_x_xyz = []
         l_translation_xyz = []
         for i in range(len(x0_lpn)):
-            translation_lpn, _, _, _, x_lpn, _ = self.geodesic_pp_lpn(x_f_lpn[i], x0_lpn[i], image_nr=image_nr, \
+            translation_lpn, _, _, _, x_lpn, _ = self.geodesic_pp_lpn_no_vec(x_f_lpn[i], x0_lpn[i], image_nr=image_nr, \
                     max_step = max_step, eps_r = eps_r, eps_phi=eps_phi, max_iterations = max_iterations, verbose=verbose)
-            l_x_lpn.append(np.array(x_lpn[0]).T)
-            l_x_xyz.append(M_lpn_xyz[i]@np.array(x_lpn[0]))
+            l_x_lpn.append(np.array(x_lpn).T)
+            l_x_xyz.append(M_lpn_xyz[i]@np.array(x_lpn))
 
             translation_xyz = M_lpn_xyz[i] @ translation_lpn
             l_translation_xyz.append(translation_xyz)
 
         if return_matrices:
-            return np.array(l_x_xyz), np.array(l_translation_xyz), M_xyz_lpn, M_lpn_xyz
+            return l_x_xyz, np.array(l_translation_xyz), M_xyz_lpn, M_lpn_xyz
         else:
-            return np.array(l_x_xyz), np.array(l_translation_xyz)
+            return l_x_xyz, np.array(l_translation_xyz)
+
 
     ##################################################################################################
     ##################################################################################################
     ##################################################################################################
-    def geodesic_pp_lpn(self, x_f_lpn=np.array([-10,10,0]), x0_lpn = np.array([10,0,0]), image_nr=1, \
+    def geodesic_pp_lpn_no_vec(self, x_f_lpn=np.array([-10,10,0]), x0_lpn = np.array([10,0,0]), image_nr=1, \
                     max_step = 1.0, eps_r = 0.0001, eps_phi=0.00000000005, max_iterations = 100, debug=False, verbose=False):
 
         debug_log = []
@@ -332,9 +332,9 @@ class BlackholeGeodesicPointPointIntegrator:
         translation_lpn = x0_lpn + k0_lpn/np.linalg.norm(k0_lpn) * length - x_f_lpn_use#l_x[-1].T[-1]
 
         if debug:
-            return translation_lpn, k0_lpn, length, l_k, l_x, l_results, debug_log
+            return translation_lpn, k0_lpn, length, l_k[0], l_x[0], l_results, debug_log
         else:
-            return translation_lpn, k0_lpn, length, l_k, l_x, l_results
+            return translation_lpn, k0_lpn, length, l_k[0], l_x[0], l_results
 
 
     ##################################################################################################
