@@ -7,7 +7,7 @@ Author: <a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de V
 <img src="images/rotsun_bl_almosts10_rev_crop_bg.gif" alt="" width="720" height="auto">
 </div>
 <div align="center">
-<sub><sup>A star-like object (textured mesh in Blender) in orbit around a Schwarzschild black hole</sup></sub>
+<sub><sup>Ray traced animation of a star-like object (textured mesh in Blender) in orbit around a Schwarzschild black hole</sup></sub>
 </div>
 
 ## Introduction
@@ -17,13 +17,9 @@ This python package is written to accompany the Black Hole Render Engine for Ble
 <img src="images/blackhole_banner.gif" alt="" width="720" height="auto">
 </div>
 <div align="center">
-<sub><sup>A Schwarzschild black hole moving sideways, warping a skydome image of stars as it goes</sup></sub>
+<sub><sup>A ray traced animation of a moving Schwarzschild black hole, warping a skydome image of stars as it moves</sup></sub>
 </div>
 
-
-## Linked repositories:
-- Geodesic approximations: https://github.com/bldevries/curvedApproxPy
-- Black Hole Render Engine for Blender: https://github.com/bldevries/BlackHoleRenderEngine
 
 ## Using curvedpy
 If you find curvedpy usefull and use it in your projects, please give me credit by mentioning this repo!
