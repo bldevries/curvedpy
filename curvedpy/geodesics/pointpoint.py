@@ -309,12 +309,15 @@ class BlackholeGeodesicPointPointIntegrator:
         k0_lpn = l_k[-1].T[0]
 
 
+        if secondary_image:
+            x_f_lpn_use[1] = -x_f_lpn_use[1]
+            
+
         x_final = l_x[-1].T
         length = sum([np.linalg.norm(x_final[i+1]-x_final[i]) for i in range(len(x_final)-1)])
         length += np.linalg.norm(x_f_lpn_use-x_final[-1])
 
-        if secondary_image:
-            x_f_lpn_use[1] = -x_f_lpn_use[1]
+
         translation_lpn = x0_lpn + k0_lpn/np.linalg.norm(k0_lpn) * length - x_f_lpn_use#l_x[-1].T[-1]
 
         if debug:

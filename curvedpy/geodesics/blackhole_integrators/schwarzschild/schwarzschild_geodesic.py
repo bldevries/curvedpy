@@ -7,7 +7,7 @@ import time
 from curvedpy.utils.conversions import Conversions
 #from curvedpy.utils.coordinates_LPN import coordinates_LPN
 
-from curvedpy.utils.coordinates_LPN import unit_vectors_lpn_no_vec, matrix_conversion_lpn_xyz_no_vec
+from curvedpy.utils.coordinates_LPN import unit_vectors_lpn_no_vec, unit_vectors_lpn, matrix_conversion_lpn_xyz_no_vec, matrix_conversion_lpn_xyz
 
 # -------------------------------
 # ----NAMING CONVENTIONS USED----
@@ -100,6 +100,45 @@ class IntegratorSchwarzschildSPH2D:
                         first_step, phi_end) for i in range(len(x0_xyz))]
 
 
+
+    ################################################################################################
+    # VECTORIZED ----- WORKING ON THIS 7 AUG 2025
+    ################################################################################################
+    def calc_trajectory_vec(self,   k0_xyz, x0_xyz, \
+                                R_end, curve_start, curve_end, nr_points_curve, \
+                                max_step, first_step, phi_end\
+                        ):
+        ''' k0_xyz and x_xyz must have shape (n,3)'''
+
+        if not isinstance(k0_xyz, np.ndarray): k0_xyz = np.array(k0_xyz)
+        if not isinstance(x0_xyz, np.ndarray): x0_xyz = np.array(x0_xyz)
+
+
+        if k0_xyz.shape != x0_xyz.shape:
+            print("k and x are not the same shape")
+            return
+
+        if k0_xyz.ndim == 1:
+            if k0_xyz.shape[0] != 3 or x0_xyz.shape[0] != 3:
+                print("k or x do not have 3 components")
+                return
+            k0_xyz = k0_xyz.reshape(1,3)
+            x0_xyz = x0_xyz.reshape(1,3)
+
+        else:
+            if k0_xyz.shape[1] != 3 or x0_xyz.shape[1] != 3:
+                print("k or x do not have 3 components")
+                return
+
+
+        return self.calc_trajectory_xyz_vec(k0_xyz, x0_xyz, R_end,\
+                        curve_start, \
+                        curve_end, \
+                        nr_points_curve, \
+                        max_step,\
+                        first_step, phi_end)
+
+
     ################################################################################################
     #
     ################################################################################################
@@ -158,6 +197,158 @@ class IntegratorSchwarzschildSPH2D:
         # result.update({"k4_xyz": k4_xyz, "x4_xyz": x4_xyz})
 
         return k_xyz, x_xyz, result
+
+
+    ################################################################################################
+    # VECTORIZED ----- WORKING ON THIS 7 AUG 2025
+    ################################################################################################
+    def calc_trajectory_xyz_vec(self, \
+                        k0_xyz, x0_xyz, \
+                        R_end,\
+                        curve_start, \
+                        curve_end, \
+                        nr_points_curve, \
+                        max_step,\
+                        first_step,\
+                        phi_end
+                       ):
+        ''' k0_xyz and x_xyz must have shape (n,3)'''
+
+        if not isinstance(x0_xyz,np.ndarray):
+            x0_xyz = np.array(x0_xyz)
+
+        if not isinstance(k0_xyz,np.ndarray):
+            k0_xyz = np.array(k0_xyz)
+
+        # If p==0 (better x.dot(k)==0) we have a singular transformation matrix, since the 
+        # basis vector for p is arbitrary and not restricted. This is when the
+        # ray is directed precisely at the center of the BH
+        # l==0 is no problem, since we take the direction k of the ray 
+        # to define the unit vector in the l direction
+        # if np.any((x0_lp.T)[1] == 0.0): print("SINGULAR", (x0_lp.T)[1] == 0.0)
+        # CONVERT TO LPN COORDINATES
+        l_hat, p_hat, n_hat = unit_vectors_lpn(k0_xyz, x0_xyz)
+        M_xyz_lpn, M_lpn_xyz = matrix_conversion_lpn_xyz(l_hat, p_hat, n_hat)
+
+        print("cbju", x0_xyz.shape)
+
+        x0_lpn = np.einsum('bij,bj->bi', M_xyz_lpn, x0_xyz)
+        x0_lpn.T[2] = 0.
+        k0_lpn = np.einsum('bij,bj->bi', M_xyz_lpn, k0_xyz)
+
+
+        # CONVERT TO 2D SPHERICAL COORDINATES
+        x0_sph, k0_sph = self.conversions.convert_xyz_to_sph(x0_lpn, k0_lpn, vec=True)#x0_xyz, k0_xyz)
+
+        l_k_sph, l_x_sph, l_result = self.calc_trajectory_sph_vec(\
+                        k0_sph, x0_sph, \
+                        R_end,\
+                        curve_start, \
+                        curve_end, \
+                        nr_points_curve, \
+                        max_step,\
+                        first_step,\
+                       )
+
+        
+        _list = [self.conversions.convert_sph_to_xyz(l_x_sph[i].T, l_k_sph[i].T, vec=True) for i in range(len(l_k_sph))]
+        l_x_lpn, l_k_lpn = zip(*_list)
+        
+        print("adsd", len(l_x_lpn), l_x_lpn[0].shape, len(M_lpn_xyz))
+
+        ### HIER GEEINDIGD MET VECTORIZEREN dit nog niet getest!!! 7 AUG 2025
+        l_k_xyz = [np.einsum('ij,bj->bi', M_lpn_xyz[i], l_k_lpn[i]) for i in range(len(l_k_lpn))]
+        # k_xyz = np.array([M_lpn_xyz@k_i for k_i in k_lpn.T]).T
+        l_x_xyz = [np.einsum('ij,bj->bi', M_lpn_xyz[i], l_x_lpn[i]) for i in range(len(l_x_lpn))]
+        # x_xyz = np.array([M_lpn_xyz@x_i for x_i in x_lpn.T]).T
+
+        return l_k_xyz, l_x_xyz, l_result
+
+
+    ################################################################################################
+    # VECTORIZED ----- WORKING ON THIS 7 AUG 2025
+    ################################################################################################
+    def calc_trajectory_sph_vec(self, \
+                        k0_sph, x0_sph, \
+                        R_end,\
+                        curve_start, \
+                        curve_end, \
+                        nr_points_curve, \
+                        max_step,\
+                        first_step,\
+                        phi_end=False\
+                       ):
+
+        print("debuug", k0_sph.shape)
+
+        k_r_0, k_th_0, k_ph_0 = k0_sph.T
+        r0, th0, ph0 = x0_sph.T
+
+
+        # Calculate k_t from norm of starting condition
+        t0 = np.full(r0.shape, 0.)
+        k_t_0 = self.metric.k_t_from_norm_lamb(k_r_0, k_ph_0, t0, r0, ph0)
+
+        print("ddd", k_t_0.shape, k_r_0.shape, t0.shape, r0.shape, th0.shape, ph0.shape)
+
+        k_0 = np.array([k_t_0, k_r_0, k_ph_0]).T
+        x_0 = np.array([t0, r0, ph0]).T
+
+        print('sadf0', k_0.shape, x_0.shape)
+
+        #Check if starting values are outside the blackhole
+        if np.all(r0 < self.metric.get_r_s()):
+            print("Starting value inside blackhole")
+            return
+
+        def hit_blackhole(t, y): 
+            eps = 0.01
+            k_t, k_r, k_ph, t, r, ph = y
+            # r = x_1#calc_radius_from_x_mu(x_0, x_1, x_2, x_3)
+            return r - (self.metric.get_r_s()+eps)
+
+        if R_end == -1: R_end = np.inf
+        #elif R_end < r0: R_end = r0*1.01
+        def stop_integration(t, y): 
+            k_t, k_r, k_ph, t, r, ph = y
+            if phi_end:
+                return ph-phi_end
+            else:
+                # r = x_1 #calc_radius_from_x_mu(x_0, x_1, x_2, x_3)
+                return r - R_end
+
+        # result = self.integrator.integrate(\
+        #                 k_0, x_0, self.metric.get_dk, hit_blackhole, \
+        #                 stop_integration,\
+        #                 curve_start, curve_end, nr_points_curve, \
+        #                 max_step, first_step, \
+        #                 verbose = self.verbose )
+
+        l_k_sph, l_x_sph, l_result = [], [], []
+        for i in range(len(k_0)):
+            res = self.integrator.integrate(\
+                            k_0[i], x_0[i], self.metric.get_dk, hit_blackhole, \
+                            stop_integration,\
+                            curve_start, curve_end, nr_points_curve, \
+                            max_step, first_step, \
+                            verbose = self.verbose )
+
+            k_t, k_r, k_ph, t, r, ph = res.y
+            lamb = res.t
+
+            k_th = np.full(k_r.shape, 0.0)
+            th = np.full(r.shape, 1/2*np.pi)
+
+            l_k_sph.append( np.array([k_r, k_th, k_ph]) )
+            l_x_sph.append( np.array([r, th, ph]) )
+
+            k4_sph = np.array([k_t, k_r, k_th, k_ph])
+            x4_sph = np.array([t, r, th, ph])
+            res.update({"k4_sph": k4_sph, "x4_sph": x4_sph})
+
+            l_result.append(res)
+
+        return l_k_sph, l_x_sph, l_result
 
     ################################################################################################
     #
@@ -225,7 +416,6 @@ class IntegratorSchwarzschildSPH2D:
         result.update({"k4_sph": k4_sph, "x4_sph": x4_sph})
 
         return k_sph, x_sph, result
-
 
 
 

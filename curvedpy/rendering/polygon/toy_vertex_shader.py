@@ -93,7 +93,7 @@ class CurvedVertexShader():
         v = look_at-cam_loc
         v = v/np.linalg.norm(v)
         # Vector in the normal plane of v
-        n = np.cross(v, up)
+        n = np.cross(up, v)#v, up)
         n = n/np.linalg.norm(n)
         # Vector in the up direction and ortho to v and n
         u = np.cross(n, v)
