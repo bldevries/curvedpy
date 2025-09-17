@@ -10,7 +10,12 @@ class CurvedVertexShader():
                     bottom_nuv, top_nuv, near_nuv, far_nuv, \
                     mass = 1.0, max_step = 1.0, \
                     eps_r = 0.0001, eps_phi=0.00000000005, \
-                    max_iterations = 100, verbose=False):
+                    max_iterations = 100, \
+                    interp_trans_l = None, interp_trans_p = None,\
+                    verbose=False):
+
+        self.interp_trans_l = interp_trans_l
+        self.interp_trans_p = interp_trans_p
 
         # Point-point geodesic integrator
         self.gi = BlackholeGeodesicPointPointIntegrator(mass=mass)
@@ -27,7 +32,9 @@ class CurvedVertexShader():
 
 
     def run(self, vertices, image_nr=1, use_bh=True):
+        # vertices.shape = (N, 4)
         vertices_3 = vertices.T[0:3].T
+        # vertices.shape = (N, 3)
 
         M_bh_1 = self.geodesic_pp_projection_matrix(vertices_3, image_nr=image_nr)
 
@@ -55,7 +62,8 @@ class CurvedVertexShader():
 
         self.M = self.pipeline(cam_loc, look_at, up, left_nuv, right_nuv, bottom_nuv, top_nuv, near_nuv, far_nuv)
 
-    def geodesic_pp_projection_matrix(self, x_f_xyz, image_nr=1):
+    # Do the pp through direction calculation
+    def geodesic_pp_projection_matrix_calc(self, x_f_xyz, image_nr=1):
         x0_xyz = np.full( (len(x_f_xyz), len(self.cam_loc)), self.cam_loc)
 
         l_x_xyz, l_translation_xyz = self.gi.geodesic_pp(\
@@ -71,6 +79,31 @@ class CurvedVertexShader():
                 [0,0,1, l_translation_xyz[i][2]],\
                 [0,0,0,1]]\
                 )
+
+        return M_tr
+
+    # Do the pp through interpolation NOT TESTED YET!! 21 AUG 2025
+    def geodesic_pp_projection_matrix(self, xf_xyz, interp_trans_l, interp_trans_p):
+        x0_xyz = np.full( (len(x_f_xyz), len(self.cam_loc)), self.cam_loc)
+
+        M_xyz_lpn, M_lpn_xyz = self.gi.matrix_conversion_lpn_xyz(*self.gi.unit_vectors_lpn(x0_xyz, xf_xyz))
+
+        xf_lpn = np.einsum('bij,bj->bi', M_xyz_lpn, xf_xyz)
+
+        lp = xf_lpn.T[0:2].T
+
+        trans_l = interp_trans_l(lp)
+        trans_p = interp_trans_p(lp)
+
+        M_tr = []
+        for i in range(len(trans_l)):
+            M = no.array(\
+                [[1,0,0, trans_l],\
+                [0,1,0, trans_p],\
+                [0,0,1, 0],\
+                [0,0,0,1]])
+            
+            M_tr.append(M_lpn_xyz@ M @ M_xyz_lpn)
 
         return M_tr
 

@@ -89,7 +89,6 @@ class BlackholeGeodesicPointPointIntegrator:
 
 
 
-
     ##################################################################################################
     def geodesic_pp(self, x_f_xyz=np.array([[-10,10,0]]), x0_xyz = np.array([[10,0,0]]), image_nr=1, \
                     max_step = 1.0, eps_r = 0.0001, eps_phi=0.00000000005, max_iterations = 100, verbose=False, \
